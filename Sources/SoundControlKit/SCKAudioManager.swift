@@ -61,7 +61,7 @@ open class SCKAudioManager: SCKAudioRecorderManager {
     
     // MARK: - Initialization
     
-    init(delegate: SCKAudioManagerDelegate? = nil) {
+    public init(delegate: SCKAudioManagerDelegate? = nil) {
         self.delegate = delegate
         super.init()
         
@@ -148,7 +148,7 @@ open class SCKAudioManager: SCKAudioRecorderManager {
         try? initializeAudioPlayer()
         
         // Publish remaining time for current audio record.
-        updateRemainingTime()
+        updatePlaybackTimeAttributes()
     }
     
     // MARK: - Overrides
