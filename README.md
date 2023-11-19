@@ -53,6 +53,10 @@ To use SoundControlKit in your project, follow these steps:
     audioManager.stopPlayback()
     ```
 
+## Example
+
+Explore the [sample project](https://github.com/bilalBakhrom/SoundControlKit/tree/master/SoundControlKitExample) that demonstrates how to use SoundControlKit.
+
 ## License
 
 SoundControlKit is released under the [Apache License 2.0](https://github.com/bilalBakhrom/SoundControlKit/blob/master/LICENSE).
