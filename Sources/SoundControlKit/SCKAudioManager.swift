@@ -9,15 +9,6 @@ import Foundation
 import AVFoundation
 import Combine
 
-/// Protocol for the delegate of the `SCKAudioManager` to receive notifications about changes in recording and playback states.
-public protocol SCKAudioManagerDelegate: AnyObject {
-    func audioManagerDidChangeRecordingState(_ audioManager: SCKAudioManager, state: SCKAudioManager.RecordingState)
-    func audioManagerDidChangePlaybackState(_ audioManager: SCKAudioManager, state: SCKAudioManager.PlaybackState)
-    func audioManagerDidFinishRecording(_ audioManager: SCKAudioManager, at location: URL)
-    func audioManagerDidFinishPlaying(_ audioManager: SCKAudioManager)
-    func audioManagerLastRecordingLocation(_ audioManager: SCKAudioManager, location: URL)
-}
-
 /// Manager class responsible for handling audio recording and playback.
 open class SCKAudioManager: SCKAudioRecorderManager {
     // MARK: - Properties
@@ -40,6 +31,9 @@ open class SCKAudioManager: SCKAudioRecorderManager {
     
     /// Progress publisher subject..
     private let playbackProgressSubject = PassthroughSubject<Double, Never>()
+    
+    /// Set of subscriptions.
+    private var subscriptions: Set<AnyCancellable> = []
     
     /// The delegate to receive notifications about changes in recording and playback states.
     public weak var delegate: SCKAudioManagerDelegate?
@@ -64,6 +58,8 @@ open class SCKAudioManager: SCKAudioRecorderManager {
     public init(delegate: SCKAudioManagerDelegate? = nil) {
         self.delegate = delegate
         super.init()
+        
+        bind()
         
         guard let recordingURL else { return }
         delegate?.audioManagerLastRecordingLocation(self, location: recordingURL)
@@ -169,6 +165,34 @@ open class SCKAudioManager: SCKAudioRecorderManager {
     }
     
     // MARK: - Private Methods
+    
+    /// Binds to notifications related to the SoundControlKit package, responding to the
+    /// need to stop audio playback when a specific notification is received.
+    private func bind() {
+        // Subscribe to the notification indicating the requirement
+        // to stop a specific audio playback.
+        NotificationCenter.default
+            .publisher(for: .soundControlKitRequiredToStopAudioPlayback)
+            .sink { [weak self] notification in
+                guard let self,
+                      let url = notification.object as? URL,
+                      let recordingURL, url == recordingURL
+                else { return }
+                
+                // Stop playback if the received notification corresponds to the current recording URL.
+                self.stopPlayback()
+            }
+            .store(in: &subscriptions)
+        
+        // Subscribe to the notification indicating the requirement
+        // to stop all playback.
+        NotificationCenter.default
+            .publisher(for: .soundControlKitRequiredToStopAllAudioPlayback)
+            .sink { [weak self] _ in
+                self?.stopPlayback()
+            }
+            .store(in: &subscriptions)
+    }
     
     /// Initializes the audio player with the recorded audio file.
     private func initializeAudioPlayer() throws {
