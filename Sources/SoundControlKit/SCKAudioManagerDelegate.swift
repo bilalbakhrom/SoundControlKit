@@ -19,8 +19,8 @@ public protocol SCKAudioManagerDelegate: AnyObject {
 // MARK: - Optional Methods
 
 extension SCKAudioManagerDelegate {
-    func audioManagerDidChangeRecordingState(_ audioManager: SCKAudioManager, state: SCKAudioManager.RecordingState) {}
-    func audioManagerDidChangePlaybackState(_ audioManager: SCKAudioManager, state: SCKAudioManager.PlaybackState) {}
-    func audioManagerDidFinishPlaying(_ audioManager: SCKAudioManager) {}
-    func audioManagerLastRecordingLocation(_ audioManager: SCKAudioManager, location: URL) {}
+    public func audioManagerDidChangeRecordingState(_ audioManager: SCKAudioManager, state: SCKAudioManager.RecordingState) {}
+    public func audioManagerDidChangePlaybackState(_ audioManager: SCKAudioManager, state: SCKAudioManager.PlaybackState) {}
+    public func audioManagerDidFinishPlaying(_ audioManager: SCKAudioManager) {}
+    public func audioManagerLastRecordingLocation(_ audioManager: SCKAudioManager, location: URL) {}
 }

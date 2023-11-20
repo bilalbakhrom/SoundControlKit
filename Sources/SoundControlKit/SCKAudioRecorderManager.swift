@@ -161,13 +161,47 @@ open class SCKAudioRecorderManager: SCKAudioSessionManager {
     public func record() {
         guard state != .recording else { return }
         
+        // Start the recording timer if not already initialized.
         if timer == nil {
             startRecordingTimer()
         }
         
+        // Begin audio recording and update the state to recording.
         recorder.record()
         state = .recording
     }
+    
+    /// Initiates the audio recording process asynchronously.
+    /// If not already recording, triggers a haptic vibration.
+    public func record() async {
+        // Do not initiate recording if the app is already recording.
+        guard state != .recording else { return }
+
+        // If transitioning from a stopped state, provide a success feedback notification.
+        if state == .stopped {
+            await sendFeedbackNotification()
+        }
+
+        // Start the recording timer if not already initialized.
+        if timer == nil {
+            startRecordingTimer()
+        }
+
+        // Begin audio recording and update the state to recording.
+        recorder.record()
+        state = .recording
+    }
+
+    /// Pauses the audio recording process if currently recording.
+    public func pause() {
+        // Do not pause if the app is not currently recording.
+        guard state == .recording else { return }
+
+        // Pause the audio recorder and update the state to paused.
+        recorder.pause()
+        state = .paused
+    }
+
     
     /// Stops the audio recording process.
     public func stop() {
@@ -261,6 +295,23 @@ open class SCKAudioRecorderManager: SCKAudioSessionManager {
         // Format the duration as "MM:SS" and return the result.
         return String(format: "%02d:%02d", minutes, seconds)
     }
+    
+    // MARK: - Private Methods
+    
+    /// Sends a UINotificationFeedbackGenerator notification with a success feedback type.
+    /// Delays execution briefly to allow for feedback sensation.
+    private func sendFeedbackNotification() async {
+        // Create and prepare a UINotificationFeedbackGenerator.
+        let generator = await UINotificationFeedbackGenerator()
+        await generator.prepare()
+        
+        // Trigger a success notification feedback.
+        await generator.notificationOccurred(.success)
+        
+        // Introduce a brief delay for the feedback sensation.
+        try? await Task.sleep(nanoseconds: 100_000_000)
+    }
+
 }
 
 // MARK: - AVAudioRecorderDelegate
@@ -295,6 +346,7 @@ extension SCKAudioRecorderManager {
     /// Represents the possible states of audio recording.
     public enum RecordingState {
         case stopped
+        case paused
         case recording
     }
 }
