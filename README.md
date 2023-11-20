@@ -14,7 +14,7 @@ You can add SoundControlKit as a dependency in your Swift Package Manager-enable
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/yourusername/SoundControlKit.git", from: "1.0.0")
+    .package(url: "https://github.com/yourusername/SoundControlKit.git", from: "1.2.0")
 ]
 ```
 
@@ -22,36 +22,43 @@ dependencies: [
 
 To use SoundControlKit in your project, follow these steps:
 
-1. **Import the SoundControlKit module:**
+```swift
+import SoundControlKit
 
-    ```swift
-    import SoundControlKit
-    ```
+// Create an instance of `SCKAudioManager`.
+let audioManager = SCKAudioManager()
 
-2. **Create an instance of `SCKAudioManager` and start recording:**
+// MARK: - Control Recording
 
-    ```swift
-    let audioManager = SCKAudioManager()
-    // Start recording audio
-    try audioManager.record()
-    ```
+// Start recording audio.
+audioManager.record()
 
-5. **Stop recording:**
+// OR: Start recording audio with haptic vibration at the beginning.
+Task { await audioManager.record() }
 
-    ```swift
-    // Stop the recording
-    audioManager.stop()
-    ```
+// Pause the recording.
+audioManager.stop()
+// Stop the recording.
+audioManager.stop()
 
-6. **Playback:**
-    ```swift
-    // Play the recorded audio
-    audioManager.play()
-    // Pause the playback
-    audioManager.pause()
-    // Stop the playback
-    audioManager.stopPlayback()
-    ```
+// MARK: - Control Playback
+
+// Play the recorded audio.
+audioManager.play()
+// Pause the playback.
+audioManager.pausePlayback()
+// Stop the playback.
+audioManager.stopPlayback()
+```
+
+Control notifications:
+```swift
+// // Stop all ongoing audio playbacks.
+NotificationCenter.default.post(sckNotification: .soundControlKitRequiredToStopAudioPlayback)
+
+// Stop a specific audio playback with the specified `URL`.
+NotificationCenter.default.post(sckNotification: .soundControlKitRequiredToStopAudioPlayback, object: recordingURL)
+```
 
 ## Example
 
@@ -61,4 +68,9 @@ Explore the [sample project](https://github.com/bilalBakhrom/SoundControlKit/tre
 
 SoundControlKit is released under the [Apache License 2.0](https://github.com/bilalBakhrom/SoundControlKit/blob/master/LICENSE).
 
+## Articles
+
+Explore the intricacies of audio recording with these informative articles:
+- [Enhancing Audio Recording Mastery: Part I — Mono Mode](https://medium.com/@bilalbakhrom/enhancing-audio-recording-mastery-part-ii-stereo-mode-a458ed18befb)
+- [Enhancing Audio Recording Mastery: Part II — Stereo Mode](https://medium.com/@bilalbakhrom/enhancing-audio-recording-mastery-part-i-mono-mode-895f9d8747e1)
 
