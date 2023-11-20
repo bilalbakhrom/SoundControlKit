@@ -5,7 +5,7 @@
 //  Created by Bilal Bakhrom on 2023-11-19.
 //
 
-import Foundation
+import UIKit
 import AVFoundation
 import Combine
 
@@ -102,43 +102,54 @@ open class SCKAudioRecorderManager: SCKAudioSessionManager {
     
     // MARK: - Recording Control
     
-    /// Updates the recording option and stereo orientation for the audio session.
+    
+    /// Updates the audio input orientation and data source based on the specified parameters.
+    ///
     /// - Parameters:
-    ///   - option: The selected recording option.
-    ///   - stereoOrientation: The desired stereo orientation.
-    public func updateRecordingOption(_ option: SCKRecordingOption, stereoOrientation: AVAudioSession.StereoOrientation) async throws {
+    ///   - orientation: The desired orientation of the audio input.
+    ///   - interfaceOrientation: The current user interface orientation.
+    /// - Throws: A `RecorderError` if unable to select the specified data source.
+    public func updateOrientation(
+        withDataSourceOrientation orientation: AVAudioSession.Orientation = .front,
+        interfaceOrientation: UIInterfaceOrientation
+    ) async throws {
         // Don't update the data source if the app is currently recording.
         guard state != .recording else { return }
-        
+
         // Get the shared audio session.
         let session = AVAudioSession.sharedInstance()
-        
+
+        // Find the data source matching the specified orientation.
         guard let preferredInput = session.preferredInput,
               let dataSources = preferredInput.dataSources,
-              let newDataSource = dataSources.first(where: { $0.orientation == option.orientation }),
+              let newDataSource = dataSources.first(where: { $0.orientation == orientation }),
               let supportedPolarPatterns = newDataSource.supportedPolarPatterns else {
             return
         }
-        
+
         do {
+            // Check for iOS 14.0 availability to handle stereo support.
             if #available(iOS 14.0, *) {
                 isStereoSupported = supportedPolarPatterns.contains(.stereo)
-                
+
+                // Set the preferred polar pattern to stereo if supported.
                 if isStereoSupported {
                     try newDataSource.setPreferredPolarPattern(.stereo)
                 }
             }
-            
+
+            // Set the preferred data source.
             try preferredInput.setPreferredDataSource(newDataSource)
-            
+
+            // Set the preferred input orientation based on the interface orientation.
             if #available(iOS 14.0, *) {
-                try session.setPreferredInputOrientation(stereoOrientation)
+                try session.setPreferredInputOrientation(interfaceOrientation.inputOrientation)
             }
         } catch {
             throw RecorderError.unableToSelectDataSource(name: newDataSource.dataSourceName)
         }
     }
-    
+
     /// Initiates the audio recording process.
     public func record() {
         guard state != .recording else { return }
