@@ -68,6 +68,13 @@ open class SCKAudioRecorderManager: SCKAudioSessionManager {
             try configureAudioSession()
             try enableBuiltInMicrophone()
             try setupAudioRecorder()
+            
+            // Asynchronously set the default data source and orientation.
+            Task {
+                // Attempt to update the orientation to portrait.
+                // Note: We're not handling errors here; if any occur, they will be silently ignored.
+                try? await updateOrientation(interfaceOrientation: .portrait)
+            }
         } catch {
             // If any errors occur during initialization, terminate the app with a fatalError.
             fatalError("Error: \(error)")
