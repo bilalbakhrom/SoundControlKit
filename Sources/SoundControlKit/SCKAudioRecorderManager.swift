@@ -179,8 +179,14 @@ open class SCKAudioRecorderManager: SCKAudioSessionManager {
     
     /// Deletes the current recording.
     public func deleteRecording() {
+        // Stop audio recorder before deleting.
         stop()
+        
+        // Delete recording.
         recorder.deleteRecording()
+        
+        // Post a notification to stop playback if it's playing.
+        NotificationCenter.default.post(sckNotification: .soundControlKitRequiredToStopAllAudioPlayback)
     }
     
     func audioRecorderDidChangeState(_ state: RecordingState) {}
