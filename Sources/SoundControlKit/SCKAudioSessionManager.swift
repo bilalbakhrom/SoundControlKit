@@ -9,30 +9,7 @@ import Foundation
 import AVFoundation
 
 /// Manages audio sessions and provides functionality for configuration and microphone selection.
-open class SCKAudioSessionManager: NSObject {
-    /// An array of available recording options based on the preferred input's data sources.
-    public let recordingOptions: [SCKRecordingOption] = {
-        let orientations: [AVAudioSession.Orientation] = [.front, .back, .bottom]
-        let session = AVAudioSession.sharedInstance()
-        
-        // Retrieve data sources from the preferred input.
-        guard let dataSources = session.preferredInput?.dataSources else { return [] }
-        
-        // Map data sources to recording options based on orientation.
-        return dataSources.compactMap {
-            switch $0.orientation {
-            case AVAudioSession.Orientation.front:
-                return SCKRecordingOption(option: .frontStereo, orientation: .front)
-            case AVAudioSession.Orientation.back:
-                return SCKRecordingOption(option: .backStereo, orientation: .back)
-            case AVAudioSession.Orientation.bottom:
-                return SCKRecordingOption(option: .mono, orientation: .bottom)
-            default:
-                return nil
-            }
-        }
-    }()
-    
+open class SCKAudioSessionManager: NSObject {    
     /// Configures the audio session for recording and playback.
     ///
     /// - Throws: An `AudioSessionError` if the configuration fails.
@@ -53,9 +30,12 @@ open class SCKAudioSessionManager: NSObject {
     
     /// Sets the built-in microphone as the preferred input.
     ///
-    /// - Note: You must set a preferred input port only after setting the audio session’s category and mode and activating the session.
+    /// - Note: You must set a preferred input port only after setting 
+    /// the audio session’s category and mode and activating the session.
     ///
-    /// - Throws: An `AudioSessionError` if the device does not have a built-in microphone or if setting the built-in microphone as the preferred input fails.
+    /// - Throws: An `AudioSessionError` if the device does not have 
+    /// a built-in microphone or if setting the built-in microphone as the preferred 
+    /// input fails.
     public func enableBuiltInMicrophone() throws {
         let audioSession = AVAudioSession.sharedInstance()
         let availableInputs = audioSession.availableInputs

@@ -17,7 +17,8 @@ class AudioManagerViewModel: ObservableObject {
     @Published var avgPowers: [Float] = []
     
     init() {
-        self.audioManager = SCKAudioManager(delegate: self)
+        audioManager = SCKAudioManager(delegate: self)        
+        Task { try? await audioManager.updateOrientation(interfaceOrientation: .portrait) }
     }
     
     func prepare() {
