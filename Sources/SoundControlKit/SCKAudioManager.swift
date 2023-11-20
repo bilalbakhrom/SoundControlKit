@@ -94,7 +94,7 @@ open class SCKAudioManager: SCKAudioRecorderManager {
     }
     
     /// Pauses the audio playback.
-    public func pause() {
+    public func pausePlayback() {
         player?.pause()
         playbackState = .paused
     }
