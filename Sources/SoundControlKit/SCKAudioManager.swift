@@ -73,11 +73,33 @@ open class SCKAudioManager: SCKAudioRecorderManager {
         playbackRemainingTimeSubject.send(remainedDuration)
     }
     
+    // MARK: - OVERRIDE
+    
+    public override func record() {
+        // Stop audio player.
+        stopPlayback()
+        // Notify the delegate about the change in playback time.
+        updatePlaybackTimeAttributes()
+        // Start recording.
+        super.record()
+    }
+    
+    public override func record() async {
+        // Stop audio player.
+        stopPlayback()
+        // Notify the delegate about the change in playback time.
+        updatePlaybackTimeAttributes()
+        // Start recording.
+        await super.record()
+    }
+    
     // MARK: - Public Methods
     
     /// Initiates the playback of the recorded audio.
     public func play() {
         guard state != .recording else { return }
+        
+        try? configurePlaybackAudioSession()
         
         if player == nil {
             try? initializeAudioPlayer()
@@ -103,6 +125,7 @@ open class SCKAudioManager: SCKAudioRecorderManager {
     public func stopPlayback() {
         stopTimer()
         player?.stop()
+        player?.currentTime = .zero
         playbackState = .stopped
     }
 

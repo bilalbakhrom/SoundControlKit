@@ -26,11 +26,11 @@ class AudioManagerViewModel: ObservableObject {
     }
         
     func recordAndStop() {
-        isRecording ? audioManager.stop() : audioManager.record()
+        isRecording ? audioManager.stopRecording() : audioManager.record()
     }
     
     func playAndStop() {
-        isPlaying ? audioManager.pause() : audioManager.play()
+        isPlaying ? audioManager.pausePlayback() : audioManager.play()
     }
     
     func forwardPlayback() {
