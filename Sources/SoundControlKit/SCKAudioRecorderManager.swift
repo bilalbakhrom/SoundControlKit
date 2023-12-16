@@ -65,7 +65,7 @@ open class SCKAudioRecorderManager: SCKAudioSessionManager {
         
         do {
             // Configure the audio session, enable the built-in microphone, and set up the audio recorder.
-            try configureAudioSession()
+            try configurePlayAndRecordAudioSession()
             try enableBuiltInMicrophone()
             try setupAudioRecorder()
             
@@ -161,10 +161,11 @@ open class SCKAudioRecorderManager: SCKAudioSessionManager {
     public func record() {
         guard state != .recording else { return }
         
+        // Update session configuration for recording.
+        try? configurePlayAndRecordAudioSession()
+        
         // Start the recording timer if not already initialized.
-        if timer == nil {
-            startRecordingTimer()
-        }
+        startRecordingTimer()
         
         // Begin audio recording and update the state to recording.
         recorder.record()
@@ -176,6 +177,9 @@ open class SCKAudioRecorderManager: SCKAudioSessionManager {
     public func record() async {
         // Do not initiate recording if the app is already recording.
         guard state != .recording else { return }
+        
+        // Update session configuration for recording.
+        try? configurePlayAndRecordAudioSession()
 
         // If transitioning from a stopped state, provide a success feedback notification.
         if state == .stopped {
@@ -193,7 +197,7 @@ open class SCKAudioRecorderManager: SCKAudioSessionManager {
     }
 
     /// Pauses the audio recording process if currently recording.
-    public func pause() {
+    public func pauseRecording() {
         // Do not pause if the app is not currently recording.
         guard state == .recording else { return }
 
@@ -204,7 +208,7 @@ open class SCKAudioRecorderManager: SCKAudioSessionManager {
 
     
     /// Stops the audio recording process.
-    public func stop() {
+    public func stopRecording() {
         recorder.stop()
         state = .stopped
         avgPowers = []
@@ -214,7 +218,7 @@ open class SCKAudioRecorderManager: SCKAudioSessionManager {
     /// Deletes the current recording.
     public func deleteRecording() {
         // Stop audio recorder before deleting.
-        stop()
+        stopRecording()
         
         // Delete recording.
         recorder.deleteRecording()
