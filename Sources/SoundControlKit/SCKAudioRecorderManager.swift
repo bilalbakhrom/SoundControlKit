@@ -58,26 +58,36 @@ open class SCKAudioRecorderManager: SCKAudioSessionManager {
         return FileManager.default.fileExists(atPath: url.path) ? url : nil
     }
     
+    public var isRecordPremissionGranted: Bool {
+        if #available(iOS 17.0, *) {
+            return AVAudioApplication.shared.recordPermission == .granted
+        } else {
+            return AVAudioSession.sharedInstance().recordPermission == .granted
+        }
+    }
+    
     // MARK: - Initialization
     
-    override init() {
+    public override init() {
         super.init()
+    }
+    
+    public func configureRecorder() throws {
+        // Check if the user has granted permission for audio recording.
+        guard isRecordPremissionGranted else {
+            throw RecorderError.microphonePermissionRequired
+        }
         
-        do {
-            // Configure the audio session, enable the built-in microphone, and set up the audio recorder.
-            try configurePlayAndRecordAudioSession()
-            try enableBuiltInMicrophone()
-            try setupAudioRecorder()
-            
-            // Asynchronously set the default data source and orientation.
-            Task {
-                // Attempt to update the orientation to portrait.
-                // Note: We're not handling errors here; if any occur, they will be silently ignored.
-                try? await updateOrientation(interfaceOrientation: .portrait)
-            }
-        } catch {
-            // If any errors occur during initialization, terminate the app with a fatalError.
-            fatalError("Error: \(error)")
+        // Continue with the configuration if permission is granted.
+        try configurePlayAndRecordAudioSession()
+        try enableBuiltInMicrophone()
+        try setupAudioRecorder()
+        
+        // Asynchronously set the default data source and orientation.
+        Task {
+            // Attempt to update the orientation to portrait.
+            // Note: We're not handling errors here; if any occur, they will be silently ignored.
+            try? await updateOrientation(interfaceOrientation: .portrait)
         }
     }
     
@@ -340,9 +350,10 @@ extension SCKAudioRecorderManager {
     public enum RecorderError: Error {
         /// An error indicating failure to create the audio recorder.
         case unableToCreateAudioRecorder
-        
         /// An error indicating failure to select a specific data source for recording.
         case unableToSelectDataSource(name: String)
+        /// An error indicating user has not a microphone permission
+        case microphonePermissionRequired
     }
     
     // MARK: - Recording State
