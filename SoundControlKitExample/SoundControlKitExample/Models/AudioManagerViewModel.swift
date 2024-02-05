@@ -7,6 +7,7 @@
 
 import Foundation
 import SoundControlKit
+import AVFoundation
 
 class AudioManagerViewModel: ObservableObject {
     private(set) var audioManager: SCKAudioManager!
@@ -15,6 +16,7 @@ class AudioManagerViewModel: ObservableObject {
     @Published var isRecording: Bool = false
     @Published var isPlaying: Bool = false
     @Published var avgPowers: [Float] = []
+    @Published var isPermissionAlertPresented: Bool = false
     
     init() {
         audioManager = SCKAudioManager(delegate: self)        
@@ -22,7 +24,12 @@ class AudioManagerViewModel: ObservableObject {
     }
     
     func prepare() {
-        audioManager.resetPlayback()
+        do {
+            try audioManager.configureRecorder()
+            audioManager.resetPlayback()
+        } catch {
+            askRecordingPermission()
+        }
     }
         
     func recordAndStop() {
@@ -45,6 +52,23 @@ class AudioManagerViewModel: ObservableObject {
         audioManager.deleteRecording()
         audioManager.resetPlayback()
         recordingURL = nil
+    }
+    
+    private func askRecordingPermission() {
+        if AVAudioSession.sharedInstance().recordPermission == .undetermined {
+            if #available(iOS 17.0, *) {
+                AVAudioApplication.requestRecordPermission { [weak self] _ in
+                    self?.prepare()
+                }
+            } else {
+                let audioSession = AVAudioSession.sharedInstance()
+                audioSession.requestRecordPermission { [weak self] _ in
+                    self?.prepare()
+                }
+            }
+        } else {
+            isPermissionAlertPresented = true
+        }
     }
 }
 
