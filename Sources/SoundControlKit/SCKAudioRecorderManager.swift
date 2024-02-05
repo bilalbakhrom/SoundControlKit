@@ -169,7 +169,7 @@ open class SCKAudioRecorderManager: SCKAudioSessionManager {
 
     /// Initiates the audio recording process.
     public func record() {
-        guard state != .recording else { return }
+        guard state != .recording && isRecordPremissionGranted else { return }
         
         // Update session configuration for recording.
         try? configurePlayAndRecordAudioSession()
@@ -186,7 +186,7 @@ open class SCKAudioRecorderManager: SCKAudioSessionManager {
     /// If not already recording, triggers a haptic vibration.
     public func record() async {
         // Do not initiate recording if the app is already recording.
-        guard state != .recording else { return }
+        guard state != .recording && isRecordPremissionGranted else { return }
         
         // Update session configuration for recording.
         try? configurePlayAndRecordAudioSession()
