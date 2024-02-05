@@ -14,7 +14,7 @@ You can add SoundControlKit as a dependency in your Swift Package Manager-enable
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/bilalBakhrom/SoundControlKit.git", from: "1.2.0")
+    .package(url: "https://github.com/bilalBakhrom/SoundControlKit.git", from: "2.0.0")
 ]
 ```
 
