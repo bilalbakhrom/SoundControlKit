@@ -28,7 +28,7 @@ open class SCKAudioRecorderManager: SCKAudioSessionManager {
     }
     
     /// The AVAudioRecorder instance for handling audio recording.
-    private var recorder: AVAudioRecorder!
+    private var recorder: AVAudioRecorder?
     
     /// The file name for the audio recording.
     private let recordingFileName = "recording.aac"
@@ -112,9 +112,9 @@ open class SCKAudioRecorderManager: SCKAudioSessionManager {
             throw RecorderError.unableToCreateAudioRecorder
         }
         
-        recorder.delegate = self
-        recorder.isMeteringEnabled = true
-        recorder.prepareToRecord()
+        recorder?.delegate = self
+        recorder?.isMeteringEnabled = true
+        recorder?.prepareToRecord()
     }
     
     // MARK: - Recording Control
@@ -178,7 +178,7 @@ open class SCKAudioRecorderManager: SCKAudioSessionManager {
         startRecordingTimer()
         
         // Begin audio recording and update the state to recording.
-        recorder.record()
+        recorder?.record()
         state = .recording
     }
     
@@ -202,7 +202,7 @@ open class SCKAudioRecorderManager: SCKAudioSessionManager {
         }
 
         // Begin audio recording and update the state to recording.
-        recorder.record()
+        recorder?.record()
         state = .recording
     }
 
@@ -212,14 +212,14 @@ open class SCKAudioRecorderManager: SCKAudioSessionManager {
         guard state == .recording else { return }
 
         // Pause the audio recorder and update the state to paused.
-        recorder.pause()
+        recorder?.pause()
         state = .paused
     }
 
     
     /// Stops the audio recording process.
     public func stopRecording() {
-        recorder.stop()
+        recorder?.stop()
         state = .stopped
         avgPowers = []
         stopTimer()
@@ -231,7 +231,7 @@ open class SCKAudioRecorderManager: SCKAudioSessionManager {
         stopRecording()
         
         // Delete recording.
-        recorder.deleteRecording()
+        recorder?.deleteRecording()
         
         // Post a notification to stop playback if it's playing.
         NotificationCenter.default.post(sckNotification: .soundControlKitRequiredToStopAllAudioPlayback)
@@ -244,6 +244,7 @@ open class SCKAudioRecorderManager: SCKAudioSessionManager {
     // MARK: - Wave Controller
     
     @objc func updateAveragePower() {
+        guard let recorder else { return }
         recorder.updateMeters()
 
         var avgPower: Float = 0.0
@@ -269,8 +270,6 @@ open class SCKAudioRecorderManager: SCKAudioSessionManager {
         recordingPowerSubject.send(avgPowers)
     }
 
-
-    
     // MARK: - Timer Methods
     
     /// Initiates a timer to track the duration of the audio recording.
@@ -281,10 +280,10 @@ open class SCKAudioRecorderManager: SCKAudioSessionManager {
             .publish(every: 0.1, on: .main, in: .common)
             .autoconnect()
             .sink { [weak self] timer in
-                guard let self, self.state == .recording else { return }
+                guard let self, let recorder, self.state == .recording else { return }
 
                 // Format the current recording duration and send it to the publisher.
-                let timeInMinutesAndSeconds = self.formatTime(self.recorder.currentTime)
+                let timeInMinutesAndSeconds = self.formatTime(recorder.currentTime)
                 self.recordingCurrentTimeSubject.send(timeInMinutesAndSeconds)
                 self.updateAveragePower()
             }
