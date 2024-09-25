@@ -175,18 +175,6 @@ public class SCKRealTimeAudioRecorder: SCKAudioSessionManager {
         recordingState = .paused
     }
 
-    /// Sends a UINotificationFeedbackGenerator notification with a success feedback type.
-    /// Delays execution briefly to allow for feedback sensation.
-    private func sendFeedbackNotification() async {
-        // Create and prepare a UINotificationFeedbackGenerator.
-        let generator = UINotificationFeedbackGenerator()
-        generator.prepare()
-        // Trigger a success notification feedback.
-        generator.notificationOccurred(.success)
-        // Introduce a brief delay for the feedback sensation.
-        try? await Task.sleep(nanoseconds: 100_000_000)
-    }
-
     // MARK: - Configuration Updates
 
     /// Updates the filename for the output file and reconfigures the audio engine.
@@ -248,7 +236,7 @@ public class SCKRealTimeAudioRecorder: SCKAudioSessionManager {
         let format = inputNode.outputFormat(forBus: 0)
         // Install the tap to handle real-time audio data.
         inputNode.installTap(onBus: 0, bufferSize: 1024, format: format) { [weak self] buffer, time in
-            self?.handleAudioBuffer(buffer)
+            self?.handleAudioBuffer(buffer, time: time)
         }
     }
 
@@ -256,18 +244,78 @@ public class SCKRealTimeAudioRecorder: SCKAudioSessionManager {
 
     /// Handles the real-time audio buffer by writing to the audio file and notifying the delegate.
     ///
-    /// - Parameter buffer: The audio buffer to be processed.
-    private func handleAudioBuffer(_ buffer: AVAudioPCMBuffer) {
+    /// - Parameters:
+    ///   - buffer: The audio buffer to be processed.
+    ///   - time: The AVAudioTime associated with the buffer.
+    private func handleAudioBuffer(_ buffer: AVAudioPCMBuffer, time: AVAudioTime) {
         guard let audioFile else { return }
 
         do {
             // Notify delegate with real-time audio buffer data.
             triggerRecordingBuffer(buffer)
+            // Calculate and send average power
+            updateAndSendAveragePower(with: buffer)
+            // Update and send current recording time using the AVAudioTime
+            updateAndSendCurrentRecordingTime(with: time)
             // Write the buffer to the audio file.
             try audioFile.write(from: buffer)
         } catch {
             print("Error writing audio buffer: \(error)")
         }
+    }
+
+    /// Updates the average power based on the provided buffer and sends it to the recordingPowerSubject.
+    private func updateAndSendAveragePower(with buffer: AVAudioPCMBuffer) {
+        let channelCount = Int(buffer.format.channelCount)
+        let frameLength = Int(buffer.frameLength)
+
+        var avgPowers: [Float] = []
+
+        for channel in 0..<channelCount {
+            let channelData = buffer.floatChannelData![channel]
+            var sum: Float = 0.0
+
+            for frame in 0..<frameLength {
+                sum += abs(channelData[frame])
+            }
+
+            // Calculate average power for this channel
+            let avgPower = sum / Float(frameLength)
+            avgPowers.append(avgPower)
+        }
+
+        // Send average powers
+        recordingPowerSubject.send(avgPowers)
+    }
+
+    /// Updates and sends the current recording time using the provided AVAudioTime.
+    ///
+    /// - Parameter time: The AVAudioTime associated with the audio buffer.
+    private func updateAndSendCurrentRecordingTime(with time: AVAudioTime) {
+        // Convert sampleTime to Double for division
+        let sampleTimeInDouble = Double(time.sampleTime)
+        let sampleRate = time.sampleRate
+
+        // Calculate the time in seconds
+        let timeInSeconds = sampleTimeInDouble / sampleRate
+        let minutes = Int(timeInSeconds) / 60
+        let seconds = Int(timeInSeconds) % 60
+        let formattedTime = String(format: "%02d:%02d", minutes, seconds)
+
+        // Send the formatted time
+        recordingCurrentTimeSubject.send(formattedTime)
+    }
+
+    /// Sends a UINotificationFeedbackGenerator notification with a success feedback type.
+    /// Delays execution briefly to allow for feedback sensation.
+    private func sendFeedbackNotification() async {
+        // Create and prepare a UINotificationFeedbackGenerator.
+        let generator = UINotificationFeedbackGenerator()
+        generator.prepare()
+        // Trigger a success notification feedback.
+        generator.notificationOccurred(.success)
+        // Introduce a brief delay for the feedback sensation.
+        try? await Task.sleep(nanoseconds: 100_000_000)
     }
 }
 
