@@ -60,8 +60,7 @@ public class SCKRealTimeAudioRecorder: SCKAudioSessionManager {
 
     public func startRecording() throws {
         do {
-            try setupAudioFile()
-            setupRealTimeAudioOutput()
+            configureAudioEngine()
             try audioEngine.start()
             recordingState = .recording
         } catch {
@@ -88,7 +87,7 @@ public class SCKRealTimeAudioRecorder: SCKAudioSessionManager {
             option: option,
             format: recordingDetails.format
         )
-        reconfigureAudioEngine()
+        configureAudioEngine()
     }
 
     public func updateOutputFormat(_ newFormat: SCKOutputFormat) {
@@ -96,7 +95,7 @@ public class SCKRealTimeAudioRecorder: SCKAudioSessionManager {
             option: recordingDetails.option,
             format: newFormat
         )
-        reconfigureAudioEngine()
+        configureAudioEngine()
     }
 
     // MARK: - Configuration
@@ -104,12 +103,12 @@ public class SCKRealTimeAudioRecorder: SCKAudioSessionManager {
     private func setupAudioFile() throws {
         let tempDir = FileManager.default.temporaryDirectory
         let fileURL = tempDir.appendingPathComponent(recordingDetails.fileName)
-
+        // Configure audio settings.
         let audioSettings: [String: Any] = [
             AVFormatIDKey: Int(recordingDetails.format.audioFormatID),
             AVLinearPCMIsNonInterleaved: false,
             AVSampleRateKey: 44_100.0,
-            AVNumberOfChannelsKey: isStereoSupported ? 2 : 1, // Use the computed property here
+            AVNumberOfChannelsKey: isStereoSupported ? 2 : 1,
             AVLinearPCMBitDepthKey: 16,
             AVEncoderAudioQualityKey: AVAudioQuality.max.rawValue
         ]
@@ -117,23 +116,32 @@ public class SCKRealTimeAudioRecorder: SCKAudioSessionManager {
         audioFile = try AVAudioFile(forWriting: fileURL, settings: audioSettings)
     }
 
-    private func reconfigureAudioEngine() {
+    private func setupRealTimeAudioOutput() {
+        // Get format from node.
+        let format = inputNode.outputFormat(forBus: 0)
+        // Listen for real-time audio recording.
+        inputNode.installTap(
+            onBus: 0,
+            bufferSize: 1024,
+            format: format,
+            block: { [weak self] (buffer, time) in
+                self?.handleAudioBuffer(buffer)
+            }
+        )
+    }
+
+    private func configureAudioEngine() {
         if recordingState == .recording {
             stopRecording()
         }
 
         do {
-            try setupAudioFile() // Create a new audio file with updated settings
-            setupRealTimeAudioOutput() // Reinstall the tap for real-time audio output
+            // Create a new audio file with updated settings
+            try setupAudioFile()
+            // Install the tap for real-time audio output
+            setupRealTimeAudioOutput()
         } catch {
             print("Error reconfiguring audio engine: \(error)")
-        }
-    }
-
-    private func setupRealTimeAudioOutput() {
-        let format = inputNode.outputFormat(forBus: 0)
-        inputNode.installTap(onBus: 0, bufferSize: 1024, format: format) { (buffer, time) in
-            self.handleAudioBuffer(buffer)
         }
     }
 
@@ -143,8 +151,8 @@ public class SCKRealTimeAudioRecorder: SCKAudioSessionManager {
         guard let audioFile else { return }
 
         do {
-            try audioFile.write(from: buffer)
             delegate?.audioRecorderDidReceiveRealTimeAudioBuffer(self, buffer: buffer)
+            try audioFile.write(from: buffer)
         } catch {
             print("Error writing audio buffer: \(error)")
         }
