@@ -30,9 +30,9 @@ open class SCKAudioRecorderManager: SCKAudioSessionManager, @unchecked Sendable 
     /// The AVAudioRecorder instance for handling audio recording.
     private var recorder: AVAudioRecorder?
     
-    /// The file name for the audio recording.
-    private let recordingFileName = "recording.aac"
-    
+    /// The file name option for the recording.
+    private(set) var recordingDetails: RecordingDetails
+
     /// The current time publisher subject for recording.
     private let recordingCurrentTimeSubject = PassthroughSubject<String, Never>()
     
@@ -54,7 +54,7 @@ open class SCKAudioRecorderManager: SCKAudioSessionManager, @unchecked Sendable 
     
     /// The URL where the recording is stored.
     public var recordingURL: URL? {
-        let url = FileManager.default.urlInDocumentsDirectory(named: recordingFileName)
+        let url = FileManager.default.urlInDocumentsDirectory(named: recordingDetails.fileName)
         return FileManager.default.fileExists(atPath: url.path) ? url : nil
     }
     
@@ -68,10 +68,11 @@ open class SCKAudioRecorderManager: SCKAudioSessionManager, @unchecked Sendable 
     
     // MARK: - Initialization
     
-    public override init() {
+    public init(fileName: SCKRecordingFileNameOption = .dateWithTime, format: SCKOutputFormat = .aac) {
+        self.recordingDetails = RecordingDetails(option: fileName, format: format)
         super.init()
     }
-    
+
     public func configureRecorder() throws {
         // Check if the user has granted permission for audio recording.
         guard isRecordPremissionGranted else {
@@ -90,14 +91,30 @@ open class SCKAudioRecorderManager: SCKAudioSessionManager, @unchecked Sendable 
             try? await updateOrientation(interfaceOrientation: .portrait)
         }
     }
-    
+
+    /// Updates the file name if the client wants to change it.
+    public func updateFileName(_ option: SCKRecordingFileNameOption) {
+        self.recordingDetails = RecordingDetails(
+            option: option,
+            format: recordingDetails.format
+        )
+    }
+
+    /// Updates the output format if the client wants to change it.
+    public func updateOutputFormat(_ newFormat: SCKOutputFormat) {
+        self.recordingDetails = RecordingDetails(
+            option: recordingDetails.option,
+            format: newFormat
+        )
+    }
+
     // MARK: - Audio Recorder Setup
     
     /// Sets up the audio recorder with the necessary configurations.
     private func setupAudioRecorder() throws {
         let tempDir = FileManager.default.temporaryDirectory
-        let fileURL = tempDir.appendingPathComponent(recordingFileName)
-        
+        let fileURL = tempDir.appendingPathComponent(recordingDetails.fileName)
+
         do {
             let audioSettings: [String: Any] = [
                 AVFormatIDKey: Int(kAudioFormatMPEG4AAC),
@@ -332,7 +349,7 @@ open class SCKAudioRecorderManager: SCKAudioSessionManager, @unchecked Sendable 
 extension SCKAudioRecorderManager: AVAudioRecorderDelegate {
     public func audioRecorderDidFinishRecording(_ recorder: AVAudioRecorder, successfully flag: Bool) {
         // Move the recorded audio file to the documents directory.
-        let destURL = FileManager.default.urlInDocumentsDirectory(named: recordingFileName)
+        let destURL = FileManager.default.urlInDocumentsDirectory(named: recordingDetails.fileName)
         try? FileManager.default.removeItem(at: destURL)
         try? FileManager.default.moveItem(at: recorder.url, to: destURL)
         recorder.prepareToRecord()

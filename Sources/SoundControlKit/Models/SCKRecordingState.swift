@@ -10,7 +10,7 @@ import Foundation
 // MARK: - Recording State
 
 /// Represents the possible states of audio recording.
-public enum SCKRecordingState {
+public enum SCKRecordingState: Sendable {
     case stopped
     case paused
     case recording

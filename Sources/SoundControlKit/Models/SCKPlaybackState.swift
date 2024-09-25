@@ -8,7 +8,7 @@
 import Foundation
 
 /// Represents the possible states of audio playback.
-public enum SCKPlaybackState {
+public enum SCKPlaybackState: Sendable {
     /// Audio is currently playing.
     case playing
 

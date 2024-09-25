@@ -55,10 +55,14 @@ open class SCKAudioManager: SCKAudioRecorderManager, @unchecked Sendable {
     
     // MARK: - Initialization
     
-    public init(delegate: SCKAudioManagerDelegate? = nil) {
+    public init(
+        fileName: SCKRecordingFileNameOption = .dateWithTime,
+        format: SCKOutputFormat = .aac,
+        delegate: SCKAudioManagerDelegate? = nil
+    ) {
         self.delegate = delegate
-        super.init()
-        
+        super.init(fileName: fileName, format: format)
+
         bind()
         
         guard let recordingURL else { return }
