@@ -90,7 +90,6 @@ SoundControlKit is released under the [Apache License 2.0](https://github.com/bi
 Explore the intricacies of audio recording with these informative articles:
 - [Enhancing Audio Recording Mastery: Part I — Mono Mode](https://medium.com/@bilalbakhrom/enhancing-audio-recording-mastery-part-ii-stereo-mode-a458ed18befb)
 - [Enhancing Audio Recording Mastery: Part II — Stereo Mode](https://medium.com/@bilalbakhrom/enhancing-audio-recording-mastery-part-i-mono-mode-895f9d8747e1)
-```
 
 ### Key Changes:
 - Updated the usage section to reflect the dynamic file naming feature.

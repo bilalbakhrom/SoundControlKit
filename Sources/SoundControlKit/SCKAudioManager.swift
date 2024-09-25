@@ -234,13 +234,15 @@ open class SCKAudioManager: SCKAudioRecorderManager, @unchecked Sendable {
             player?.delegate = self
             player?.prepareToPlay()
         } catch {
-            throw SCKPlaybackError.unableToInitializeAudioPlayer
+            throw SCKPlaybackError.unableToInitializeAudioPlayer(underlyingError: error)
         }
     }
     
     /// Handles changes in the audio playback state and notifies the delegate.
     private func handlePlaybackStateChange(_ state: SCKPlaybackState) {
-        delegate?.audioManagerDidChangePlaybackState(self, state: state)
+        DispatchQueue.main.async {
+            self.delegate?.audioManagerDidChangePlaybackState(self, state: state)
+        }
     }
     
     /// Starts a timer to track the progress and duration of the audio playback.

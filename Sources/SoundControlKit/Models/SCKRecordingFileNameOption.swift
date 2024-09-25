@@ -13,7 +13,7 @@ public enum SCKRecordingFileNameOption: Sendable {
     case custom(String)
 
     /// Generates the actual file name string based on the selected option.
-    var actualFileName: String {
+    public var actualFileName: String {
         let dateFormatter = DateFormatter()
 
         switch self {
@@ -30,7 +30,7 @@ public enum SCKRecordingFileNameOption: Sendable {
         }
     }
 
-    func fileName(format: SCKOutputFormat) -> String {
+    public func fileName(format: SCKOutputFormat) -> String {
         "\(actualFileName).\(format.fileExtension)"
     }
 }

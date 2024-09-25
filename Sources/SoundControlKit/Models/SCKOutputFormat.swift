@@ -15,7 +15,7 @@ public enum SCKOutputFormat: Sendable {
     case wav  // Linear PCM
     case flac // FLAC
 
-    var audioFormatID: AudioFormatID {
+    public var audioFormatID: AudioFormatID {
         switch self {
         case .aac: kAudioFormatMPEG4AAC
         case .m4a: kAudioFormatAppleLossless
@@ -24,7 +24,7 @@ public enum SCKOutputFormat: Sendable {
         }
     }
 
-    var fileExtension: String {
+    public var fileExtension: String {
         switch self {
         case .aac: "aac"
         case .m4a: "m4a"
