@@ -24,7 +24,7 @@ class AudioManagerViewModel: ObservableObject {
     
     func prepare() {
         Task { @MainActor in
-            realTimeRecorder = SCKRealTimeAudioRecorder(fileName: .dateWithTime, outputFormat: .aac)
+            realTimeRecorder = SCKRealTimeAudioRecorder(outputFormat: .aac)
             realTimeRecorder.delegate = self
             try? await audioManager.updateOrientation(interfaceOrientation: .portrait)
         }
@@ -40,9 +40,9 @@ class AudioManagerViewModel: ObservableObject {
     @MainActor
     func recordAndStop() {
         if isRecording {
-            Task { await realTimeRecorder.stopRecording() }
+            Task { await realTimeRecorder.stop() }
         } else {
-            Task { try? await realTimeRecorder.startRecording() }
+            Task { try? await realTimeRecorder.start() }
         }
 
 //        isRecording ? audioManager.stopRecording() : audioManager.record()
@@ -109,9 +109,7 @@ extension AudioManagerViewModel: SCKAudioManagerDelegate {
     
     func audioManagerDidFinishPlaying(_ audioManager: SCKAudioManager) {}
     
-    func audioManagerLastRecordingLocation(_ audioManager: SCKAudioManager, location: URL) {
-        recordingURL = location
-    }
+    func audioManagerLastRecordingLocation(_ audioManager: SCKAudioManager, location: URL) {}
 }
 
 extension AudioManagerViewModel: SCKRealTimeAudioRecorderDelegate {

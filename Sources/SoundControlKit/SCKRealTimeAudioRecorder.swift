@@ -40,6 +40,9 @@ public class SCKRealTimeAudioRecorder: SCKAudioSessionManager {
     private let recordingPowerSubject = PassthroughSubject<[Float], Never>()
     private var avgPowers: [Float] = []
 
+    private let sampleRate: Double = 44_100.0
+    private var startSampleTime: AVAudioFramePosition = 0
+
     /// Checks if stereo is supported based on the current input node format.
     private var isStereoSupported: Bool {
         let format = inputNode.outputFormat(forBus: 0)
@@ -72,9 +75,9 @@ public class SCKRealTimeAudioRecorder: SCKAudioSessionManager {
     /// Initializes the real-time audio recorder with configurable filename and output format.
     ///
     /// - Parameters:
-    ///   - fileName: The naming convention for the output file (default is date with time).
+    ///   - fileName: The naming convention for the output file (default is date).
     ///   - outputFormat: The format for the audio recording (default is AAC).
-    public init(fileName: SCKRecordingFileNameOption = .dateWithTime, outputFormat: SCKOutputFormat = .aac) {
+    public init(fileName: SCKRecordingFileNameOption = .date, outputFormat: SCKOutputFormat = .aac) {
         self.recordingDetails = RecordingDetails(option: fileName, format: outputFormat)
         self.engine = AVAudioEngine()
         self.mixer = AVAudioMixerNode()
@@ -93,8 +96,6 @@ public class SCKRealTimeAudioRecorder: SCKAudioSessionManager {
     ///   - buffer: The audio buffer to be processed.
     ///   - time: The AVAudioTime associated with the buffer.
     private func handleAudioBuffer(_ buffer: AVAudioPCMBuffer, time: AVAudioTime) async {
-        guard let audioFile else { return }
-
         do {
             // Notify delegate with real-time audio buffer data.
             await triggerRecordingBuffer(buffer)
@@ -103,7 +104,7 @@ public class SCKRealTimeAudioRecorder: SCKAudioSessionManager {
             // Update and send current recording time using the AVAudioTime
             sendCurrentRecordingTime(with: time)
             // Write the buffer to the audio file.
-            try audioFile.write(from: buffer)
+            try audioFile?.write(from: buffer)
         } catch {
             print("Error writing audio buffer: \(error)")
         }
@@ -125,45 +126,53 @@ public class SCKRealTimeAudioRecorder: SCKAudioSessionManager {
 
     /// Updates the average power based on the provided buffer and sends it to the recordingPowerSubject.
     private func sendAveragePower(with buffer: AVAudioPCMBuffer) {
-        let channelCount = Int(buffer.format.channelCount)
-        let frameLength = Int(buffer.frameLength)
+        guard let channelData = buffer.floatChannelData else { return }
+        let channelDataValue = channelData.pointee
+        let channelDataValueArray = stride(
+          from: 0,
+          to: Int(buffer.frameLength),
+          by: buffer.stride)
+          .map { channelDataValue[$0] }
 
-        var avgPowers: [Float] = []
-
-        for channel in 0..<channelCount {
-            let channelData = buffer.floatChannelData![channel]
-            var sum: Float = 0.0
-
-            for frame in 0..<frameLength {
-                sum += abs(channelData[frame])
-            }
-
-            // Calculate average power for this channel
-            let avgPower = sum / Float(frameLength)
-            avgPowers.append(avgPower)
+        let rms = sqrt(channelDataValueArray.map {
+          return $0 * $0
         }
+        .reduce(0, +) / Float(buffer.frameLength))
+
+        let avgPower = 20 * log10(rms)
+        avgPowers.append(scaledPower(power: avgPower))
 
         // Send average powers
         recordingPowerSubject.send(avgPowers)
+    }
+
+    private func scaledPower(power: Float) -> Float {
+      guard power.isFinite else {
+        return 0.0
+      }
+
+      let minDb: Float = -80
+
+      if power < minDb {
+        return 0.0
+      } else if power >= 1.0 {
+        return 1.0
+      } else {
+        return (abs(minDb) - abs(power)) / abs(minDb)
+      }
     }
 
     /// Updates and sends the current recording time using the provided AVAudioTime.
     ///
     /// - Parameter time: The AVAudioTime associated with the audio buffer.
     private func sendCurrentRecordingTime(with time: AVAudioTime) {
-        // Calculate the elapsed sample time since recording started
-        let elapsedSampleTime = time.sampleTime
-
-        // Convert sampleTime to Double for division
-        let sampleTimeInDouble = Double(elapsedSampleTime)
-        let sampleRate = time.sampleRate
-
-        // Calculate the time in seconds
-        let timeInSeconds = sampleTimeInDouble / sampleRate
+        let currentSampleTime = time.sampleTime
+        // Calculate elapsed time in seconds
+        let timeInSeconds = Double(currentSampleTime - startSampleTime) / sampleRate
+        // Format the time into minutes and seconds
         let minutes = Int(timeInSeconds) / 60
         let seconds = Int(timeInSeconds) % 60
         let formattedTime = String(format: "%02d:%02d", minutes, seconds)
-
         // Send the formatted time
         recordingCurrentTimeSubject.send(formattedTime)
     }
@@ -195,9 +204,6 @@ extension SCKRealTimeAudioRecorder {
     public func start() async throws {
         guard canStartRecording else { return }
 
-        // Configure the audio session for recording.
-        try configurePlayAndRecordAudioSession()
-
         // Start recording and update the state to recording.
         do {
             // Provide haptic feedback if starting from the stopped state.
@@ -207,6 +213,8 @@ extension SCKRealTimeAudioRecorder {
 
             await configure()
             try engine.start()
+            startSampleTime = engine.inputNode.lastRenderTime?.sampleTime ?? 0
+            setupRealTimeAudioOutput()
             recordingState = .recording
         } catch {
             throw SCKAudioRecorderError.engineStartFailure(error)
@@ -217,7 +225,7 @@ extension SCKRealTimeAudioRecorder {
     public func stop() async {
         engine.stop()
         engine.reset()
-        engine.outputNode.removeTap(onBus: 0)
+        engine.inputNode.removeTap(onBus: 0)
         recordingState = .stopped
 
         // Notify delegate with the file URL where the audio is saved.
@@ -253,22 +261,25 @@ extension SCKRealTimeAudioRecorder {
         recordingDetails = RecordingDetails(option: recordingDetails.option, format: newFormat)
         await configure()
     }
-    
+
     /// Configures the audio engine by setting up the audio file and real-time audio output.
     private func configure() async {
         do {
+            try configurePlayAndRecordAudioSession()
             try setupAudio()
             configureEngine()
-            setupRealTimeAudioOutput()
         } catch {
-            print("Error reconfiguring audio engine: \(error)")
+            print("Error configuring audio engine: \(error)")
         }
     }
 
     /// Sets up the audio engine, including the equalizer, reverb, and audio connections.
     private func configureEngine() {
+        // Attach nodes
         engine.attach(mixer)
+        // Connect input node to mixer
         engine.connect(inputNode, to: mixer, format: inputNode.outputFormat(forBus: 0))
+        engine.prepare()
     }
 
     /// Sets up the audio file for writing recorded audio data.
@@ -276,13 +287,12 @@ extension SCKRealTimeAudioRecorder {
     /// - Throws: If the file setup fails.
     private func setupAudio() throws {
         let tempDir = FileManager.default.temporaryDirectory
-        let fileURL = tempDir.appendingPathComponent(recordingDetails.fileNameForRealTime)
-
+        let fileURL = tempDir.appendingPathComponent(recordingDetails.fileName)
         // Configure the audio settings.
         let audioSettings: [String: Any] = [
             AVFormatIDKey: Int(recordingDetails.format.audioFormatID),
             AVLinearPCMIsNonInterleaved: false,
-            AVSampleRateKey: 44_100.0,
+            AVSampleRateKey: sampleRate,
             AVNumberOfChannelsKey: isStereoSupported ? 2 : 1,
             AVLinearPCMBitDepthKey: 16,
             AVEncoderAudioQualityKey: AVAudioQuality.max.rawValue
@@ -295,15 +305,19 @@ extension SCKRealTimeAudioRecorder {
 
     /// Installs a tap on the input node to capture real-time audio buffers during recording.
     private func setupRealTimeAudioOutput() {
-        engine.reset()
-        // Get the format from the input node.
         let inputFormat = inputNode.outputFormat(forBus: 0)
-        // Install the tap to handle real-time audio data.
-        mixer.installTap(onBus: 0, bufferSize: 1024, format: inputFormat) { [weak self] buffer, time in
-            guard let self else { return }
-            // Ensure handleAudioBuffer is called on the main thread
-            Task { @MainActor in await self.handleAudioBuffer(buffer, time: time) }
+        // Ensure that the engine is running before installing the tap
+        if engine.isRunning {
+            inputNode.installTap(
+                onBus: 0,
+                bufferSize: 1024,
+                format: inputFormat
+            ) { [weak self] buffer, time in
+                guard let self = self else { return }
+                Task { @MainActor in await self.handleAudioBuffer(buffer, time: time) }
+            }
+        } else {
+            print("Audio engine is not running when trying to install tap.")
         }
-        engine.prepare()
     }
 }

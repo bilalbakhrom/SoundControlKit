@@ -92,7 +92,7 @@ struct AudioManagerView: View {
                                     Rectangle()
                                         .fill(Color.red)
                                         .frame(width: 1.5)
-                                        .frame(height: power == 0 ? 1.5 : power * 52)
+                                        .frame(height: power == 0 ? 1.5 : power * 10)
                                 }
                                 .frame(height: 52)
                             }
