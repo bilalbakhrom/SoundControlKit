@@ -19,7 +19,7 @@ class AudioManagerViewModel: ObservableObject {
     @Published var isPermissionAlertPresented: Bool = false
     
     init() {
-        audioManager = SCKAudioManager(format: .m4a, delegate: self)
+        audioManager = SCKAudioManager(format: .wav, delegate: self)
         Task { try? await audioManager.updateOrientation(interfaceOrientation: .portrait) }
     }
     

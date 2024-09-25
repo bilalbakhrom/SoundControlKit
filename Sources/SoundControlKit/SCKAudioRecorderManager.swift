@@ -98,6 +98,7 @@ open class SCKAudioRecorderManager: SCKAudioSessionManager, @unchecked Sendable 
             option: option,
             format: recordingDetails.format
         )
+        try? configureRecorder()
     }
 
     /// Updates the output format if the client wants to change it.
@@ -106,6 +107,7 @@ open class SCKAudioRecorderManager: SCKAudioSessionManager, @unchecked Sendable 
             option: recordingDetails.option,
             format: newFormat
         )
+        try? configureRecorder()
     }
 
     // MARK: - Audio Recorder Setup
@@ -117,7 +119,7 @@ open class SCKAudioRecorderManager: SCKAudioSessionManager, @unchecked Sendable 
 
         do {
             let audioSettings: [String: Any] = [
-                AVFormatIDKey: Int(kAudioFormatMPEG4AAC),
+                AVFormatIDKey: Int(recordingDetails.format.audioFormatID),
                 AVLinearPCMIsNonInterleaved: false,
                 AVSampleRateKey: 44_100.0,
                 AVNumberOfChannelsKey: isStereoSupported ? 2 : 1,
