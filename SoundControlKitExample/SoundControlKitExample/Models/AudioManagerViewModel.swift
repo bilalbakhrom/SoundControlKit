@@ -12,7 +12,6 @@ import AVFoundation
 class AudioManagerViewModel: ObservableObject {
     private(set) var audioManager: SCKAudioManager!
     private(set) var realTimeRecorder: SCKRealTimeAudioRecorder!
-
     @Published var recordingURL: URL?
     @Published var isRecording: Bool = false
     @Published var isPlaying: Bool = false
@@ -21,11 +20,15 @@ class AudioManagerViewModel: ObservableObject {
     
     init() {
         audioManager = SCKAudioManager(format: .wav, delegate: self)
-        realTimeRecorder = SCKRealTimeAudioRecorder(fileName: .dateWithTime, outputFormat: .wav)
-        Task { try? await audioManager.updateOrientation(interfaceOrientation: .portrait) }
     }
     
     func prepare() {
+        Task { @MainActor in
+            realTimeRecorder = SCKRealTimeAudioRecorder(fileName: .dateWithTime, outputFormat: .aac)
+            realTimeRecorder.delegate = self
+            try? await audioManager.updateOrientation(interfaceOrientation: .portrait)
+        }
+
         do {
             try audioManager.configureRecorder()
             audioManager.resetPlayback()
@@ -34,8 +37,14 @@ class AudioManagerViewModel: ObservableObject {
         }
     }
         
+    @MainActor
     func recordAndStop() {
-        isRecording ? try? realTimeRecorder.startRecording() : realTimeRecorder.stopRecording()
+        if isRecording {
+            Task { await realTimeRecorder.stopRecording() }
+        } else {
+            Task { try? await realTimeRecorder.startRecording() }
+        }
+
 //        isRecording ? audioManager.stopRecording() : audioManager.record()
     }
     
@@ -107,14 +116,17 @@ extension AudioManagerViewModel: SCKAudioManagerDelegate {
 
 extension AudioManagerViewModel: SCKRealTimeAudioRecorderDelegate {
     func audioRecorderDidChangeRecordingState(_ audioRecorder: SCKRealTimeAudioRecorder, state: SCKRecordingState) {
-
+        isRecording = state == .recording
+        print("[DEBUG] Recording did change state to \(state)")
     }
     
     func audioRecorderDidFinishRecording(_ audioRecorder: SCKRealTimeAudioRecorder, at location: URL) {
-
+        recordingURL = location
+        avgPowers = []
+        print("[DEBUG] Recording finished at \(location)")
     }
     
     func audioRecorderDidReceiveRealTimeAudioBuffer(_ audioRecorder: SCKRealTimeAudioRecorder, buffer: AVAudioPCMBuffer) {
-
+        print("[DEBUG] Did receive buffer")
     }
 }
