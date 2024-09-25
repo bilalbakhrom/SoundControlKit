@@ -9,8 +9,8 @@ import Foundation
 
 /// Protocol for the delegate of the `SCKAudioManager` to receive notifications about changes in recording and playback states.
 public protocol SCKAudioManagerDelegate: AnyObject {
-    func audioManagerDidChangeRecordingState(_ audioManager: SCKAudioManager, state: SCKAudioManager.RecordingState)
-    func audioManagerDidChangePlaybackState(_ audioManager: SCKAudioManager, state: SCKAudioManager.PlaybackState)
+    func audioManagerDidChangeRecordingState(_ audioManager: SCKAudioManager, state: SCKRecordingState)
+    func audioManagerDidChangePlaybackState(_ audioManager: SCKAudioManager, state: SCKPlaybackState)
     func audioManagerDidFinishRecording(_ audioManager: SCKAudioManager, at location: URL)
     func audioManagerDidFinishPlaying(_ audioManager: SCKAudioManager)
     func audioManagerLastRecordingLocation(_ audioManager: SCKAudioManager, location: URL)
@@ -19,8 +19,8 @@ public protocol SCKAudioManagerDelegate: AnyObject {
 // MARK: - Optional Methods
 
 extension SCKAudioManagerDelegate {
-    public func audioManagerDidChangeRecordingState(_ audioManager: SCKAudioManager, state: SCKAudioManager.RecordingState) {}
-    public func audioManagerDidChangePlaybackState(_ audioManager: SCKAudioManager, state: SCKAudioManager.PlaybackState) {}
+    public func audioManagerDidChangeRecordingState(_ audioManager: SCKAudioManager, state: SCKRecordingState) {}
+    public func audioManagerDidChangePlaybackState(_ audioManager: SCKAudioManager, state: SCKPlaybackState) {}
     public func audioManagerDidFinishPlaying(_ audioManager: SCKAudioManager) {}
     public func audioManagerLastRecordingLocation(_ audioManager: SCKAudioManager, location: URL) {}
 }

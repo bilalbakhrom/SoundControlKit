@@ -10,11 +10,11 @@ import AVFoundation
 import Combine
 
 /// Manages audio recording functionality, including setup, configuration, and control.
-open class SCKAudioRecorderManager: SCKAudioSessionManager {
+open class SCKAudioRecorderManager: SCKAudioSessionManager, @unchecked Sendable {
     // MARK: - Properties
     
     /// Current state of audio recording.
-    private(set) var state: RecordingState = .stopped {
+    private(set) var state: SCKRecordingState = .stopped {
         didSet {
             audioRecorderDidChangeState(state)
         }
@@ -75,7 +75,7 @@ open class SCKAudioRecorderManager: SCKAudioSessionManager {
     public func configureRecorder() throws {
         // Check if the user has granted permission for audio recording.
         guard isRecordPremissionGranted else {
-            throw RecorderError.microphonePermissionRequired
+            throw SCKRecorderError.microphonePermissionRequired
         }
         
         // Continue with the configuration if permission is granted.
@@ -109,7 +109,7 @@ open class SCKAudioRecorderManager: SCKAudioSessionManager {
             ]
             recorder = try AVAudioRecorder(url: fileURL, settings: audioSettings)
         } catch {
-            throw RecorderError.unableToCreateAudioRecorder
+            throw SCKRecorderError.unableToCreateAudioRecorder
         }
         
         recorder?.delegate = self
@@ -125,7 +125,7 @@ open class SCKAudioRecorderManager: SCKAudioSessionManager {
     /// - Parameters:
     ///   - orientation: The desired orientation of the audio input.
     ///   - interfaceOrientation: The current user interface orientation.
-    /// - Throws: A `RecorderError` if unable to select the specified data source.
+    /// - Throws: A `SCKRecorderError` if unable to select the specified data source.
     public func updateOrientation(
         withDataSourceOrientation orientation: AVAudioSession.Orientation = .front,
         interfaceOrientation: UIInterfaceOrientation
@@ -163,7 +163,7 @@ open class SCKAudioRecorderManager: SCKAudioSessionManager {
                 try session.setPreferredInputOrientation(interfaceOrientation.inputOrientation)
             }
         } catch {
-            throw RecorderError.unableToSelectDataSource(name: newDataSource.dataSourceName)
+            throw SCKRecorderError.unableToSelectDataSource(name: newDataSource.dataSourceName)
         }
     }
 
@@ -237,7 +237,7 @@ open class SCKAudioRecorderManager: SCKAudioSessionManager {
         NotificationCenter.default.post(sckNotification: .soundControlKitRequiredToStopAllAudioPlayback)
     }
     
-    func audioRecorderDidChangeState(_ state: RecordingState) {}
+    func audioRecorderDidChangeState(_ state: SCKRecordingState) {}
     
     func audioRecorderDidFinishRecording(_ recorder: AVAudioRecorder) {}
     
@@ -339,28 +339,5 @@ extension SCKAudioRecorderManager: AVAudioRecorderDelegate {
         avgPowers = []
         state = .stopped
         audioRecorderDidFinishRecording(recorder)
-    }
-}
-
-extension SCKAudioRecorderManager {
-    // MARK: - Error
-    
-    /// Errors specific to the `SCKAudioRecorderManager` class.
-    public enum RecorderError: Error {
-        /// An error indicating failure to create the audio recorder.
-        case unableToCreateAudioRecorder
-        /// An error indicating failure to select a specific data source for recording.
-        case unableToSelectDataSource(name: String)
-        /// An error indicating user has not a microphone permission
-        case microphonePermissionRequired
-    }
-    
-    // MARK: - Recording State
-    
-    /// Represents the possible states of audio recording.
-    public enum RecordingState {
-        case stopped
-        case paused
-        case recording
     }
 }
