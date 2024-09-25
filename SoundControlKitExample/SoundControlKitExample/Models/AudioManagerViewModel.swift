@@ -11,7 +11,8 @@ import AVFoundation
 
 class AudioManagerViewModel: ObservableObject {
     private(set) var audioManager: SCKAudioManager!
-    
+    private(set) var realTimeRecorder: SCKRealTimeAudioRecorder!
+
     @Published var recordingURL: URL?
     @Published var isRecording: Bool = false
     @Published var isPlaying: Bool = false
@@ -20,6 +21,7 @@ class AudioManagerViewModel: ObservableObject {
     
     init() {
         audioManager = SCKAudioManager(format: .wav, delegate: self)
+        realTimeRecorder = SCKRealTimeAudioRecorder(fileName: .dateWithTime, outputFormat: .wav)
         Task { try? await audioManager.updateOrientation(interfaceOrientation: .portrait) }
     }
     
@@ -33,7 +35,8 @@ class AudioManagerViewModel: ObservableObject {
     }
         
     func recordAndStop() {
-        isRecording ? audioManager.stopRecording() : audioManager.record()
+        isRecording ? try? realTimeRecorder.startRecording() : realTimeRecorder.stopRecording()
+//        isRecording ? audioManager.stopRecording() : audioManager.record()
     }
     
     func playAndStop() {
@@ -99,5 +102,19 @@ extension AudioManagerViewModel: SCKAudioManagerDelegate {
     
     func audioManagerLastRecordingLocation(_ audioManager: SCKAudioManager, location: URL) {
         recordingURL = location
+    }
+}
+
+extension AudioManagerViewModel: SCKRealTimeAudioRecorderDelegate {
+    func audioRecorderDidChangeRecordingState(_ audioRecorder: SCKRealTimeAudioRecorder, state: SCKRecordingState) {
+
+    }
+    
+    func audioRecorderDidFinishRecording(_ audioRecorder: SCKRealTimeAudioRecorder, at location: URL) {
+
+    }
+    
+    func audioRecorderDidReceiveRealTimeAudioBuffer(_ audioRecorder: SCKRealTimeAudioRecorder, buffer: AVAudioPCMBuffer) {
+
     }
 }

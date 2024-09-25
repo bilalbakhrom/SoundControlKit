@@ -5,12 +5,14 @@
 //  Created by Bilal Bakhrom on 25/09/24.
 //
 
-import Foundation
+import UIKit
 import AVFoundation
+import Combine
 
 /// A real-time audio recorder that allows recording and processing audio buffers in real time.
 /// It supports configurable output formats, real-time audio effects like equalizer and reverb,
 /// and provides delegate methods for recording state and real-time audio buffer handling.
+@MainActor
 public class SCKRealTimeAudioRecorder: SCKAudioSessionManager {
     // MARK: - Properties
 
@@ -27,7 +29,7 @@ public class SCKRealTimeAudioRecorder: SCKAudioSessionManager {
     /// The current state of the audio recording (stopped, recording, or paused).
     private var recordingState: SCKRecordingState = .stopped {
         didSet {
-            delegate?.audioRecorderDidChangeRecordingState(self, state: recordingState)
+            triggerRecordingState(recordingState)
         }
     }
     /// Details about the recording, including filename and format.
@@ -36,11 +38,38 @@ public class SCKRealTimeAudioRecorder: SCKAudioSessionManager {
     private var audioFile: AVAudioFile?
     /// A weak reference to the delegate that handles recording events and real-time audio data.
     public weak var delegate: SCKRealTimeAudioRecorderDelegate?
+    /// A cancellable timer for managing recording time (not currently used).
+    private var timer: AnyCancellable?
+    /// The current time publisher subject for recording.
+    private let recordingCurrentTimeSubject = PassthroughSubject<String, Never>()
+    private let recordingPowerSubject = PassthroughSubject<[Float], Never>()
+    private var avgPowers: [Float] = []
 
     /// Checks if stereo is supported based on the current input node format.
     private var isStereoSupported: Bool {
         let format = inputNode.outputFormat(forBus: 0)
         return format.channelCount >= 2
+    }
+
+    public var isRecordPremissionGranted: Bool {
+        if #available(iOS 17.0, *) {
+            return AVAudioApplication.shared.recordPermission == .granted
+        } else {
+            return AVAudioSession.sharedInstance().recordPermission == .granted
+        }
+    }
+
+    /// Publishes the current time for recording in the format: `mm:ss`.
+    public var recordingCurrentTimePublisher: AnyPublisher<String, Never> {
+        recordingCurrentTimeSubject.eraseToAnyPublisher()
+    }
+
+    public var recordingPowerPublisher: AnyPublisher<[Float], Never> {
+        recordingPowerSubject.eraseToAnyPublisher()
+    }
+
+    private var canStartRecording: Bool {
+        recordingState != .recording && isRecordPremissionGranted
     }
 
     // MARK: - Initialization
@@ -90,6 +119,37 @@ public class SCKRealTimeAudioRecorder: SCKAudioSessionManager {
     ///
     /// - Throws: `SCKAudioRecorderError.engineStartFailure` if the audio engine fails to start.
     public func startRecording() throws {
+        guard canStartRecording else { return }
+
+        do {
+            try configurePlayAndRecordAudioSession()
+            configureAudioEngine()
+            try audioEngine.start()
+            recordingState = .recording
+        } catch {
+            throw SCKAudioRecorderError.engineStartFailure(error)
+        }
+    }
+
+    /// Initiates the audio recording process asynchronously with proper session configuration.
+    ///
+    /// This method checks if recording is already in progress and ensures that recording permission
+    /// has been granted. If the state is `.stopped`, it will provide haptic feedback, configure the
+    /// audio session for recording, and start the audio engine to begin recording.
+    ///
+    /// - Throws: `SCKAudioRecorderError` if the audio session configuration or audio engine fails.
+    public func startRecording() async throws {
+        guard canStartRecording else { return }
+
+        // Configure the audio session for recording.
+        try configurePlayAndRecordAudioSession()
+
+        // Provide haptic feedback if starting from the stopped state.
+        if recordingState == .stopped {
+            await sendFeedbackNotification()
+        }
+
+        // Start recording and update the state to recording.
         do {
             configureAudioEngine()
             try audioEngine.start()
@@ -106,13 +166,25 @@ public class SCKRealTimeAudioRecorder: SCKAudioSessionManager {
 
         // Notify delegate with the file URL where the audio is saved.
         if let audioFileURL = audioFile?.url {
-            delegate?.audioRecorderDidFinishRecording(self, at: audioFileURL)
+            triggerRecordingEnd(audioFileURL)
         }
     }
 
     /// Pauses the recording process.
     public func pauseRecording() {
         recordingState = .paused
+    }
+
+    /// Sends a UINotificationFeedbackGenerator notification with a success feedback type.
+    /// Delays execution briefly to allow for feedback sensation.
+    private func sendFeedbackNotification() async {
+        // Create and prepare a UINotificationFeedbackGenerator.
+        let generator = UINotificationFeedbackGenerator()
+        generator.prepare()
+        // Trigger a success notification feedback.
+        generator.notificationOccurred(.success)
+        // Introduce a brief delay for the feedback sensation.
+        try? await Task.sleep(nanoseconds: 100_000_000)
     }
 
     // MARK: - Configuration Updates
@@ -137,7 +209,6 @@ public class SCKRealTimeAudioRecorder: SCKAudioSessionManager {
 
     /// Configures the audio engine by setting up the audio file and real-time audio output.
     private func configureAudioEngine() {
-        // If currently recording, stop the recording before reconfiguring.
         if recordingState == .recording {
             stopRecording()
         }
@@ -158,7 +229,6 @@ public class SCKRealTimeAudioRecorder: SCKAudioSessionManager {
     private func setupAudioFile() throws {
         let tempDir = FileManager.default.temporaryDirectory
         let fileURL = tempDir.appendingPathComponent(recordingDetails.fileName)
-
         // Configure the audio settings.
         let audioSettings: [String: Any] = [
             AVFormatIDKey: Int(recordingDetails.format.audioFormatID),
@@ -168,7 +238,6 @@ public class SCKRealTimeAudioRecorder: SCKAudioSessionManager {
             AVLinearPCMBitDepthKey: 16,
             AVEncoderAudioQualityKey: AVAudioQuality.max.rawValue
         ]
-
         // Create a new audio file for writing.
         audioFile = try AVAudioFile(forWriting: fileURL, settings: audioSettings)
     }
@@ -177,7 +246,6 @@ public class SCKRealTimeAudioRecorder: SCKAudioSessionManager {
     private func setupRealTimeAudioOutput() {
         // Get the format from the input node.
         let format = inputNode.outputFormat(forBus: 0)
-
         // Install the tap to handle real-time audio data.
         inputNode.installTap(onBus: 0, bufferSize: 1024, format: format) { [weak self] buffer, time in
             self?.handleAudioBuffer(buffer)
@@ -194,12 +262,31 @@ public class SCKRealTimeAudioRecorder: SCKAudioSessionManager {
 
         do {
             // Notify delegate with real-time audio buffer data.
-            delegate?.audioRecorderDidReceiveRealTimeAudioBuffer(self, buffer: buffer)
-
+            triggerRecordingBuffer(buffer)
             // Write the buffer to the audio file.
             try audioFile.write(from: buffer)
         } catch {
             print("Error writing audio buffer: \(error)")
+        }
+    }
+}
+
+extension SCKRealTimeAudioRecorder {
+    private func triggerRecordingState(_ recordingState: SCKRecordingState) {
+        Task {
+            await delegate?.audioRecorderDidChangeRecordingState(self, state: recordingState)
+        }
+    }
+
+    private func triggerRecordingEnd(_ audioFileURL: URL) {
+        Task {
+            await delegate?.audioRecorderDidFinishRecording(self, at: audioFileURL)
+        }
+    }
+
+    private func triggerRecordingBuffer(_ buffer: AVAudioPCMBuffer) {
+        Task { @MainActor in
+            await delegate?.audioRecorderDidReceiveRealTimeAudioBuffer(self, buffer: buffer)
         }
     }
 }
