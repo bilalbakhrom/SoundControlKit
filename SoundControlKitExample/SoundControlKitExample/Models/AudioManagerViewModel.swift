@@ -19,7 +19,7 @@ class AudioManagerViewModel: ObservableObject {
     @Published var isPermissionAlertPresented: Bool = false
     
     init() {
-        audioManager = SCKAudioManager(delegate: self)        
+        audioManager = SCKAudioManager(format: .wav, delegate: self)
         Task { try? await audioManager.updateOrientation(interfaceOrientation: .portrait) }
     }
     
@@ -73,7 +73,7 @@ class AudioManagerViewModel: ObservableObject {
 }
 
 extension AudioManagerViewModel: SCKAudioManagerDelegate {
-    func audioManagerDidChangeRecordingState(_ audioManager: SCKAudioManager, state: SCKAudioRecorderManager.RecordingState) {
+    func audioManagerDidChangeRecordingState(_ audioManager: SCKAudioManager, state: SCKRecordingState) {
         Task {
             await MainActor.run {
                 isRecording = state == .recording
@@ -81,7 +81,7 @@ extension AudioManagerViewModel: SCKAudioManagerDelegate {
         }
     }
     
-    func audioManagerDidChangePlaybackState(_ audioManager: SCKAudioManager, state: SCKAudioManager.PlaybackState) {
+    func audioManagerDidChangePlaybackState(_ audioManager: SCKAudioManager, state: SCKPlaybackState) {
         Task {
             await MainActor.run {
                 isPlaying = state == .playing
@@ -92,6 +92,7 @@ extension AudioManagerViewModel: SCKAudioManagerDelegate {
     func audioManagerDidFinishRecording(_ audioManager: SCKAudioManager, at location: URL) {
         recordingURL = location
         avgPowers = []
+        print("[DEBUG] Recording finished at \(location)")
     }
     
     func audioManagerDidFinishPlaying(_ audioManager: SCKAudioManager) {}

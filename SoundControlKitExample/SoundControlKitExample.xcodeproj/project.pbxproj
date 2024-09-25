@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		D51476972CA3F7E0002C9035 /* SoundControlKit in Frameworks */ = {isa = PBXBuildFile; productRef = D51476962CA3F7E0002C9035 /* SoundControlKit */; };
 		D56DA56F2B0A779E006CE22B /* SoundControlKitExampleApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = D56DA56E2B0A779E006CE22B /* SoundControlKitExampleApp.swift */; };
 		D56DA5732B0A77A0006CE22B /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = D56DA5722B0A77A0006CE22B /* Assets.xcassets */; };
 		D56DA5762B0A77A0006CE22B /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = D56DA5752B0A77A0006CE22B /* Preview Assets.xcassets */; };
@@ -15,7 +16,6 @@
 		D56DA5862B0A77E2006CE22B /* RecorderButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = D56DA5802B0A77E2006CE22B /* RecorderButton.swift */; };
 		D56DA5872B0A77E2006CE22B /* PlayerButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = D56DA5812B0A77E2006CE22B /* PlayerButton.swift */; };
 		D56DA5882B0A77E2006CE22B /* AudioManagerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D56DA5822B0A77E2006CE22B /* AudioManagerView.swift */; };
-		D56DA58B2B0A7801006CE22B /* SoundControlKit in Frameworks */ = {isa = PBXBuildFile; productRef = D56DA58A2B0A7801006CE22B /* SoundControlKit */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -35,7 +35,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				D56DA58B2B0A7801006CE22B /* SoundControlKit in Frameworks */,
+				D51476972CA3F7E0002C9035 /* SoundControlKit in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -130,7 +130,7 @@
 			);
 			name = SoundControlKitExample;
 			packageProductDependencies = (
-				D56DA58A2B0A7801006CE22B /* SoundControlKit */,
+				D51476962CA3F7E0002C9035 /* SoundControlKit */,
 			);
 			productName = SoundControlKitExample;
 			productReference = D56DA56B2B0A779E006CE22B /* SoundControlKitExample.app */;
@@ -161,7 +161,7 @@
 			);
 			mainGroup = D56DA5622B0A779E006CE22B;
 			packageReferences = (
-				D56DA5892B0A7801006CE22B /* XCLocalSwiftPackageReference ".." */,
+				D51476952CA3F7E0002C9035 /* XCLocalSwiftPackageReference "../../SoundControlKit" */,
 			);
 			productRefGroup = D56DA56C2B0A779E006CE22B /* Products */;
 			projectDirPath = "";
@@ -408,14 +408,14 @@
 /* End XCConfigurationList section */
 
 /* Begin XCLocalSwiftPackageReference section */
-		D56DA5892B0A7801006CE22B /* XCLocalSwiftPackageReference ".." */ = {
+		D51476952CA3F7E0002C9035 /* XCLocalSwiftPackageReference "../../SoundControlKit" */ = {
 			isa = XCLocalSwiftPackageReference;
-			relativePath = ..;
+			relativePath = ../../SoundControlKit;
 		};
 /* End XCLocalSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
-		D56DA58A2B0A7801006CE22B /* SoundControlKit */ = {
+		D51476962CA3F7E0002C9035 /* SoundControlKit */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = SoundControlKit;
 		};

@@ -18,8 +18,12 @@ open class SCKAudioSessionManager: NSObject {
             let audioSession = AVAudioSession.sharedInstance()
             
             // Set the audio session category to play and record, allowing default to speaker and Bluetooth.
-            try audioSession.setCategory(.playAndRecord, mode: .default, options: [.defaultToSpeaker, .allowBluetooth])
-            
+            try audioSession.setCategory(
+                .playAndRecord,
+                mode: .default,
+                options: [.defaultToSpeaker, .allowBluetooth]
+            )
+
             // Activate the audio session.
             try audioSession.setActive(true)
         } catch {

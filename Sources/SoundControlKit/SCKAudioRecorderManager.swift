@@ -10,11 +10,11 @@ import AVFoundation
 import Combine
 
 /// Manages audio recording functionality, including setup, configuration, and control.
-open class SCKAudioRecorderManager: SCKAudioSessionManager {
+open class SCKAudioRecorderManager: SCKAudioSessionManager, @unchecked Sendable {
     // MARK: - Properties
     
     /// Current state of audio recording.
-    private(set) var state: RecordingState = .stopped {
+    private(set) var state: SCKRecordingState = .stopped {
         didSet {
             audioRecorderDidChangeState(state)
         }
@@ -30,9 +30,9 @@ open class SCKAudioRecorderManager: SCKAudioSessionManager {
     /// The AVAudioRecorder instance for handling audio recording.
     private var recorder: AVAudioRecorder?
     
-    /// The file name for the audio recording.
-    private let recordingFileName = "recording.aac"
-    
+    /// The file name option for the recording.
+    private(set) var recordingDetails: RecordingDetails
+
     /// The current time publisher subject for recording.
     private let recordingCurrentTimeSubject = PassthroughSubject<String, Never>()
     
@@ -54,7 +54,7 @@ open class SCKAudioRecorderManager: SCKAudioSessionManager {
     
     /// The URL where the recording is stored.
     public var recordingURL: URL? {
-        let url = FileManager.default.urlInDocumentsDirectory(named: recordingFileName)
+        let url = FileManager.default.urlInDocumentsDirectory(named: recordingDetails.fileName)
         return FileManager.default.fileExists(atPath: url.path) ? url : nil
     }
     
@@ -68,14 +68,15 @@ open class SCKAudioRecorderManager: SCKAudioSessionManager {
     
     // MARK: - Initialization
     
-    public override init() {
+    public init(fileName: SCKRecordingFileNameOption = .dateWithTime, format: SCKOutputFormat = .aac) {
+        self.recordingDetails = RecordingDetails(option: fileName, format: format)
         super.init()
     }
-    
+
     public func configureRecorder() throws {
         // Check if the user has granted permission for audio recording.
         guard isRecordPremissionGranted else {
-            throw RecorderError.microphonePermissionRequired
+            throw SCKRecorderError.microphonePermissionRequired
         }
         
         // Continue with the configuration if permission is granted.
@@ -90,17 +91,35 @@ open class SCKAudioRecorderManager: SCKAudioSessionManager {
             try? await updateOrientation(interfaceOrientation: .portrait)
         }
     }
-    
+
+    /// Updates the file name if the client wants to change it.
+    public func updateFileName(_ option: SCKRecordingFileNameOption) {
+        self.recordingDetails = RecordingDetails(
+            option: option,
+            format: recordingDetails.format
+        )
+        try? configureRecorder()
+    }
+
+    /// Updates the output format if the client wants to change it.
+    public func updateOutputFormat(_ newFormat: SCKOutputFormat) {
+        self.recordingDetails = RecordingDetails(
+            option: recordingDetails.option,
+            format: newFormat
+        )
+        try? configureRecorder()
+    }
+
     // MARK: - Audio Recorder Setup
     
     /// Sets up the audio recorder with the necessary configurations.
     private func setupAudioRecorder() throws {
         let tempDir = FileManager.default.temporaryDirectory
-        let fileURL = tempDir.appendingPathComponent(recordingFileName)
-        
+        let fileURL = tempDir.appendingPathComponent(recordingDetails.fileName)
+
         do {
             let audioSettings: [String: Any] = [
-                AVFormatIDKey: Int(kAudioFormatMPEG4AAC),
+                AVFormatIDKey: Int(recordingDetails.format.audioFormatID),
                 AVLinearPCMIsNonInterleaved: false,
                 AVSampleRateKey: 44_100.0,
                 AVNumberOfChannelsKey: isStereoSupported ? 2 : 1,
@@ -109,7 +128,7 @@ open class SCKAudioRecorderManager: SCKAudioSessionManager {
             ]
             recorder = try AVAudioRecorder(url: fileURL, settings: audioSettings)
         } catch {
-            throw RecorderError.unableToCreateAudioRecorder
+            throw SCKRecorderError.unableToCreateAudioRecorder
         }
         
         recorder?.delegate = self
@@ -125,7 +144,7 @@ open class SCKAudioRecorderManager: SCKAudioSessionManager {
     /// - Parameters:
     ///   - orientation: The desired orientation of the audio input.
     ///   - interfaceOrientation: The current user interface orientation.
-    /// - Throws: A `RecorderError` if unable to select the specified data source.
+    /// - Throws: A `SCKRecorderError` if unable to select the specified data source.
     public func updateOrientation(
         withDataSourceOrientation orientation: AVAudioSession.Orientation = .front,
         interfaceOrientation: UIInterfaceOrientation
@@ -163,7 +182,7 @@ open class SCKAudioRecorderManager: SCKAudioSessionManager {
                 try session.setPreferredInputOrientation(interfaceOrientation.inputOrientation)
             }
         } catch {
-            throw RecorderError.unableToSelectDataSource(name: newDataSource.dataSourceName)
+            throw SCKRecorderError.unableToSelectDataSource(name: newDataSource.dataSourceName)
         }
     }
 
@@ -237,7 +256,7 @@ open class SCKAudioRecorderManager: SCKAudioSessionManager {
         NotificationCenter.default.post(sckNotification: .soundControlKitRequiredToStopAllAudioPlayback)
     }
     
-    func audioRecorderDidChangeState(_ state: RecordingState) {}
+    func audioRecorderDidChangeState(_ state: SCKRecordingState) {}
     
     func audioRecorderDidFinishRecording(_ recorder: AVAudioRecorder) {}
     
@@ -332,35 +351,12 @@ open class SCKAudioRecorderManager: SCKAudioSessionManager {
 extension SCKAudioRecorderManager: AVAudioRecorderDelegate {
     public func audioRecorderDidFinishRecording(_ recorder: AVAudioRecorder, successfully flag: Bool) {
         // Move the recorded audio file to the documents directory.
-        let destURL = FileManager.default.urlInDocumentsDirectory(named: recordingFileName)
+        let destURL = FileManager.default.urlInDocumentsDirectory(named: recordingDetails.fileName)
         try? FileManager.default.removeItem(at: destURL)
         try? FileManager.default.moveItem(at: recorder.url, to: destURL)
         recorder.prepareToRecord()
         avgPowers = []
         state = .stopped
         audioRecorderDidFinishRecording(recorder)
-    }
-}
-
-extension SCKAudioRecorderManager {
-    // MARK: - Error
-    
-    /// Errors specific to the `SCKAudioRecorderManager` class.
-    public enum RecorderError: Error {
-        /// An error indicating failure to create the audio recorder.
-        case unableToCreateAudioRecorder
-        /// An error indicating failure to select a specific data source for recording.
-        case unableToSelectDataSource(name: String)
-        /// An error indicating user has not a microphone permission
-        case microphonePermissionRequired
-    }
-    
-    // MARK: - Recording State
-    
-    /// Represents the possible states of audio recording.
-    public enum RecordingState {
-        case stopped
-        case paused
-        case recording
     }
 }

@@ -10,11 +10,11 @@ import AVFoundation
 import Combine
 
 /// Manager class responsible for handling audio recording and playback.
-open class SCKAudioManager: SCKAudioRecorderManager {
+open class SCKAudioManager: SCKAudioRecorderManager, @unchecked Sendable {
     // MARK: - Properties
     
     /// Current state of audio playback.
-    private(set) var playbackState: PlaybackState = .stopped {
+    private(set) var playbackState: SCKPlaybackState = .stopped {
         didSet {
             handlePlaybackStateChange(playbackState)
         }
@@ -55,10 +55,14 @@ open class SCKAudioManager: SCKAudioRecorderManager {
     
     // MARK: - Initialization
     
-    public init(delegate: SCKAudioManagerDelegate? = nil) {
+    public init(
+        fileName: SCKRecordingFileNameOption = .dateWithTime,
+        format: SCKOutputFormat = .aac,
+        delegate: SCKAudioManagerDelegate? = nil
+    ) {
         self.delegate = delegate
-        super.init()
-        
+        super.init(fileName: fileName, format: format)
+
         bind()
         
         guard let recordingURL else { return }
@@ -173,7 +177,7 @@ open class SCKAudioManager: SCKAudioRecorderManager {
     // MARK: - Overrides
     
     /// Notifies the delegate about changes in the audio recording state.
-    override func audioRecorderDidChangeState(_ state: RecordingState) {
+    override func audioRecorderDidChangeState(_ state: SCKRecordingState) {
         super.audioRecorderDidChangeState(state)
         delegate?.audioManagerDidChangeRecordingState(self, state: state)
     }
@@ -230,13 +234,15 @@ open class SCKAudioManager: SCKAudioRecorderManager {
             player?.delegate = self
             player?.prepareToPlay()
         } catch {
-            throw PlaybackError.unableToInitializeAudioPlayer
+            throw SCKPlaybackError.unableToInitializeAudioPlayer(underlyingError: error)
         }
     }
     
     /// Handles changes in the audio playback state and notifies the delegate.
-    private func handlePlaybackStateChange(_ state: PlaybackState) {
-        delegate?.audioManagerDidChangePlaybackState(self, state: state)
+    private func handlePlaybackStateChange(_ state: SCKPlaybackState) {
+        DispatchQueue.main.async {
+            self.delegate?.audioManagerDidChangePlaybackState(self, state: state)
+        }
     }
     
     /// Starts a timer to track the progress and duration of the audio playback.
@@ -324,30 +330,3 @@ extension SCKAudioManager: AVAudioPlayerDelegate {
         delegate?.audioManagerDidFinishPlaying(self)
     }
 }
-
-// MARK: - SCKAudioManager Extensions
-
-extension SCKAudioManager {
-    // MARK: - Error
-    
-    /// Errors specific to the `SCKAudioManager` class.
-    public enum PlaybackError: Error {
-        /// An error indicating failure to initialize the audio player.
-        case unableToInitializeAudioPlayer
-    }
-    
-    // MARK: - Playback State
-    
-    /// Represents the possible states of audio playback.
-    public enum PlaybackState {
-        /// Audio is currently playing.
-        case playing
-        
-        /// Audio playback is paused.
-        case paused
-        
-        /// Audio playback has stopped.
-        case stopped
-    }
-}
-
