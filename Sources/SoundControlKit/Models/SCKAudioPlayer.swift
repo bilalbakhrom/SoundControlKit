@@ -17,7 +17,7 @@ final public class SCKAudioPlayer: NSObject, ObservableObject {
     @Published public var progress: Double = 0.0
     @Published public private(set) var playbackState: SCKPlaybackState = .stopped
 
-    private let player: AVAudioPlayer
+    private var player: AVAudioPlayer?
     private var subscriptions: Set<AnyCancellable> = []
     private var timer: AnyCancellable?
 
@@ -26,20 +26,20 @@ final public class SCKAudioPlayer: NSObject, ObservableObject {
     }
 
     public var isPlaying: Bool {
-        player.isPlaying
+        player?.isPlaying ?? false
     }
 
     public var date: String? {
         guard let values = try? audioURL.resourceValues(forKeys: [.creationDateKey]),
               let creationDate = values.creationDate
-        else {
-            return nil
-        }
+        else { return nil }
+
         return Self.dateFormatter.string(from: creationDate)
     }
 
     public var totalTime: String {
-        formatTime(player.duration)
+        guard let duration = player?.duration else { return "00:00" }
+        return formatTime(duration)
     }
 
     private static let dateFormatter: DateFormatter = {
@@ -48,26 +48,26 @@ final public class SCKAudioPlayer: NSObject, ObservableObject {
         return formatter
     }()
 
-    public init(audioURL: URL) throws {
+    public init(audioURL: URL) {
         self.audioURL = audioURL
-        self.player = try AVAudioPlayer(contentsOf: audioURL)
         super.init()
-
-        try configure()
         bind()
     }
 
-    private func configure() throws {
+    public func configure() throws {
+        guard player == nil else { return }
+
+        // Configure audio player.
+        player = try AVAudioPlayer(contentsOf: audioURL)
+        player?.isMeteringEnabled = true
+        player?.delegate = self
+        player?.prepareToPlay()
+
         // Configure audio session.
         let session = AVAudioSession.sharedInstance()
         try session.setCategory(.playback, mode: .default)
         try session.overrideOutputAudioPort(.speaker)
         try session.setActive(true)
-
-        // Configure audio player.
-        player.isMeteringEnabled = true
-        player.delegate = self
-        player.prepareToPlay()
     }
 
     /// Starts a timer to track the progress and duration of the audio playback.
@@ -92,6 +92,8 @@ final public class SCKAudioPlayer: NSObject, ObservableObject {
 
     /// Updates time-related attributes for the current audio playback, such as progress, current time, and remaining time.
     private func updatePlaybackTimeAttributes() {
+        guard let player else { return }
+
         // Calculate the playback progress.
         let progress = player.currentTime / player.duration
         // Format the current playback time.
@@ -108,6 +110,8 @@ final public class SCKAudioPlayer: NSObject, ObservableObject {
     ///
     /// - Note: This method calculates the remaining time by subtracting the current playback time from the total duration.
     private func updateRemainingTime() {
+        guard let player else { return }
+
         let remainingTime = formatRemainingTime(
             currentTime: player.currentTime,
             duration: player.duration
@@ -129,21 +133,21 @@ extension SCKAudioPlayer {
         }
 
         // Start playback.
-        player.play()
+        player?.play()
         playbackState = .playing
     }
 
     /// Pauses the audio playback.
     public func pausePlayback() {
-        player.pause()
+        player?.pause()
         playbackState = .paused
     }
 
     /// Stops the audio playback.
     public func stop() {
         stopTimer()
-        player.stop()
-        player.currentTime = .zero
+        player?.stop()
+        player?.currentTime = .zero
         playbackState = .stopped
         progress = 0
         currentTime = "00:00"
@@ -154,6 +158,8 @@ extension SCKAudioPlayer {
     ///
     /// - Parameter seconds: The number of seconds to forward the playback.
     public func forwardPlayback(by seconds: TimeInterval) {
+        guard let player else { return }
+
         // Calculate the new time after forwarding by the specified number of seconds.
         let newTime = min(player.currentTime + seconds, player.duration)
         // Set the player's current time to the calculated new time.
@@ -166,6 +172,8 @@ extension SCKAudioPlayer {
     ///
     /// - Parameter seconds: The number of seconds to rewind the playback.
     public func rewindPlayback(by seconds: TimeInterval) {
+        guard let player else { return }
+
         // Calculate the new time after rewinding by the specified number of seconds.
         let newTime = max(player.currentTime - seconds, 0)
         // Set the player's current time to the calculated new time.

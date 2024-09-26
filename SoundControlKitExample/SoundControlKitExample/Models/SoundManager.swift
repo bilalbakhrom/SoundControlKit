@@ -56,12 +56,6 @@ final class SoundManager: NSObject, ObservableObject {
         }
     }
 
-    func loadAudioFiles() {
-        // Load audio files from temporary directory
-        let urls = collectAudioFiles()
-        audioPlayers = urls.compactMap { try? SCKAudioPlayer(audioURL: $0) }
-    }
-
     func removeAudio(at index: Int) {
         guard index < audioPlayers.count else { return }
 
@@ -76,6 +70,12 @@ final class SoundManager: NSObject, ObservableObject {
         } catch {
             print("Error removing audio file: \(error.localizedDescription)")
         }
+    }
+
+    private func loadAudioFiles() {
+        let urls = self.collectAudioFiles()
+        audioPlayers = urls.map(SCKAudioPlayer.init)
+        audioPlayers.forEach { try? $0.configure() }
     }
 
     private func askRecordingPermission() {
@@ -131,6 +131,6 @@ extension SoundManager: SCKRealTimeAudioRecorderDelegate {
     }
 
     func recorderDidUpdatePowerLevels(_ recorder: SCKRealTimeAudioRecorder, levels: [Float]) {
-        Task { @MainActor in self.avgPowers = avgPowers.reversed() }
+        Task { @MainActor in self.avgPowers = levels.reversed() }
     }
 }
