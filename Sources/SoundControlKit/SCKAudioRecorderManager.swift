@@ -343,7 +343,6 @@ open class SCKAudioRecorderManager: SCKAudioSessionManager, @unchecked Sendable 
         // Introduce a brief delay for the feedback sensation.
         try? await Task.sleep(nanoseconds: 100_000_000)
     }
-
 }
 
 // MARK: - AVAudioRecorderDelegate

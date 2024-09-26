@@ -9,11 +9,15 @@ import Foundation
 import AVFoundation
 
 /// Supported audio formats.
-public enum SCKOutputFormat: Sendable {
+public enum SCKOutputFormat: Sendable, CaseIterable {
     case aac  // MPEG-4 AAC
     case m4a  // Apple Lossless
     case wav  // Linear PCM
     case flac // FLAC
+
+    public static var supportedFormats: [String] {
+        return SCKOutputFormat.allCases.map(\.fileExtension)
+    }
 
     public var audioFormatID: AudioFormatID {
         switch self {
