@@ -218,6 +218,16 @@ extension SCKRealTimeAudioRecorder {
             try? await Task.sleep(nanoseconds: 100_000_000)
         }
     }
+
+    private func playRecordingStartSound() {
+        let systemSoundID: SystemSoundID = 1117
+        AudioServicesPlaySystemSound(systemSoundID)
+    }
+
+    private func playRecordingStopSound() {
+        let systemSoundID: SystemSoundID = 1118
+        AudioServicesPlaySystemSound(systemSoundID)
+    }
 }
 
 // MARK: - Recording Control
@@ -237,7 +247,7 @@ extension SCKRealTimeAudioRecorder {
         do {
             // Provide haptic feedback if starting from the stopped state.
             if recordingState == .stopped {
-                sendFeedbackNotification()
+                playRecordingStartSound()
             }
 
             configure()
@@ -259,6 +269,7 @@ extension SCKRealTimeAudioRecorder {
         recordingState = .stopped
         avgPowers = []
         startSampleTime = 0
+        playRecordingStopSound()
 
         // Notify delegate with the file URL where the audio is saved.
         if let audioFileURL = audioFile?.url {
