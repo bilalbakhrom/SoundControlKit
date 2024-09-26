@@ -205,20 +205,6 @@ extension SCKRealTimeAudioRecorder {
         triggerRecordingTime(formattedTime)
     }
 
-    /// Sends a UINotificationFeedbackGenerator notification with a success feedback type.
-    /// Delays execution briefly to allow for feedback sensation.
-    private func sendFeedbackNotification() {
-        Task { @MainActor in
-            // Create and prepare a UINotificationFeedbackGenerator.
-            let generator = UINotificationFeedbackGenerator()
-            generator.prepare()
-            // Trigger a success notification feedback.
-            generator.notificationOccurred(.success)
-            // Introduce a brief delay for the feedback sensation.
-            try? await Task.sleep(nanoseconds: 100_000_000)
-        }
-    }
-
     private func playRecordingStartSound() {
         let systemSoundID: SystemSoundID = 1117
         AudioServicesPlaySystemSound(systemSoundID)
