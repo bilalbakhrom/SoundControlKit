@@ -117,20 +117,20 @@ final class SoundManager: NSObject, ObservableObject {
 }
 
 extension SoundManager: SCKRealTimeAudioRecorderDelegate {
-    func audioRecorderDidChangeRecordingState(_ audioRecorder: SCKRealTimeAudioRecorder, state: SCKRecordingState) {
-        isRecording = state == .recording
-    }
-
-    func audioRecorderDidFinishRecording(_ audioRecorder: SCKRealTimeAudioRecorder, at location: URL) {
+    func recorderDidFinish(_ recorder: SCKRealTimeAudioRecorder, at location: URL) {
         avgPowers = []
         prepare()
     }
 
-    func audioRecorderDidUpdateAveragePower(_ audioRecorder: SCKRealTimeAudioRecorder, avgPowers: [Float]) {
-        Task { @MainActor in self.avgPowers = avgPowers.reversed() }
+    func recorderDidUpdateTime(_ recorder: SCKRealTimeAudioRecorder, time: String) {
+        Task { @MainActor in self.recordingCurrentTime = time }
     }
 
-    func audioRecorderDidUpdateTime(_ audioRecorder: SCKRealTimeAudioRecorder, time: String) {
-        Task { @MainActor in self.recordingCurrentTime = time }
+    func recorderDidChangeState(_ recorder: SCKRealTimeAudioRecorder, state: SCKRecordingState) {
+        isRecording = state == .recording
+    }
+
+    func recorderDidUpdatePowerLevels(_ recorder: SCKRealTimeAudioRecorder, levels: [Float]) {
+        Task { @MainActor in self.avgPowers = avgPowers.reversed() }
     }
 }
