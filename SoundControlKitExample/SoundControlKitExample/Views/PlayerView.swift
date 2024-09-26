@@ -16,16 +16,19 @@ struct PlayerView: View {
         soundManager.currentlyPlayingIndex == index && soundManager.isPlaying
     }
 
+    private static let dateFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "dd MMM yyyy"
+        return formatter
+    }()
+
     private var date: String? {
         guard let values = try? audioURL.resourceValues(forKeys: [.creationDateKey]),
               let creationDate = values.creationDate
         else {
             return nil
         }
-
-        let dateFormatter = DateFormatter()
-        dateFormatter.dateFormat = "dd MMM yyyy"
-        return dateFormatter.string(from: creationDate)
+        return Self.dateFormatter.string(from: creationDate)
     }
 
     init(audioURL: URL, index: Int) {

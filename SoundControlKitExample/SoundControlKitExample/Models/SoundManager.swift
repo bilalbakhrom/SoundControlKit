@@ -52,11 +52,15 @@ final class SoundManager: NSObject, ObservableObject {
             askRecordingPermission()
             return
         }
-        
+
         if isRecording {
             realTimeRecorder.stop()
         } else {
-            try? realTimeRecorder.start()
+            do {
+                try realTimeRecorder.start()
+            } catch {
+                print("Failed to start recording: \(error.localizedDescription)")
+            }
         }
     }
 
@@ -102,6 +106,8 @@ final class SoundManager: NSObject, ObservableObject {
     func stopAudio() {
         audioPlayer?.stop()
         isPlaying = false
+        cancellables.forEach { $0.cancel() }
+        cancellables.removeAll()
         currentlyPlayingIndex = nil
         currentAudioTime = 0
     }
