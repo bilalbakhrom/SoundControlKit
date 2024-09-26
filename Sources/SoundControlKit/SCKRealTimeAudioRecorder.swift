@@ -218,7 +218,7 @@ extension SCKRealTimeAudioRecorder {
             try? await Task.sleep(nanoseconds: 100_000_000)
         }
     }
-
+  
     private func playRecordingStartSound() {
         let systemSoundID: SystemSoundID = 1117
         AudioServicesPlaySystemSound(systemSoundID)
