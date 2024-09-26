@@ -17,7 +17,7 @@ public class SCKRealTimeAudioRecorder: SCKAudioSessionManager {
     /// The output node used to route audio for playback or further processing.
     private let outputNode: AVAudioOutputNode
     /// The node to hold input nodes.
-    private let mixer: AVAudioMixerNode
+    private let mixerNode: AVAudioMixerNode
     /// Details about the recording, including filename and format.
     private(set) var recordingDetails: RecordingDetails
     /// The audio file being written to during recording.
@@ -59,6 +59,22 @@ public class SCKRealTimeAudioRecorder: SCKAudioSessionManager {
         recordingState != .recording && isRecordPremissionGranted
     }
 
+    private var audioSettings: [String: Any] {
+        [
+            AVFormatIDKey: Int(recordingDetails.format.audioFormatID),
+            AVLinearPCMIsNonInterleaved: false,
+            AVSampleRateKey: sampleRate,
+            AVNumberOfChannelsKey: isStereoSupported ? 2 : 1,
+            AVLinearPCMBitDepthKey: 16,
+            AVEncoderAudioQualityKey: AVAudioQuality.max.rawValue
+        ]
+    }
+
+    private var fileURL: URL {
+        let tempDir = FileManager.default.temporaryDirectory
+        return tempDir.appendingPathComponent(recordingDetails.fileName)
+    }
+
     // MARK: - Initialization
 
     /// Initializes the real-time audio recorder with configurable filename and output format.
@@ -69,7 +85,7 @@ public class SCKRealTimeAudioRecorder: SCKAudioSessionManager {
     public init(fileName: SCKRecordingFileNameOption = .date, outputFormat: SCKOutputFormat = .aac, delegate: SCKRealTimeAudioRecorderDelegate? = nil) {
         self.recordingDetails = RecordingDetails(option: fileName, format: outputFormat)
         self.engine = AVAudioEngine()
-        self.mixer = AVAudioMixerNode()
+        self.mixerNode = AVAudioMixerNode()
         self.inputNode = engine.inputNode
         self.outputNode = engine.outputNode
         self.delegate = delegate
@@ -227,7 +243,7 @@ extension SCKRealTimeAudioRecorder {
 
             configure()
             try engine.start()
-            startSampleTime = engine.inputNode.lastRenderTime?.sampleTime ?? 0
+            startSampleTime = engine.mainMixerNode.lastRenderTime?.sampleTime ?? 0
             setupRealTimeAudioOutput()
             recordingState = .recording
         } catch {
@@ -238,9 +254,10 @@ extension SCKRealTimeAudioRecorder {
     /// Stops the recording process and saves the recorded file.
     public func stop() {
         engine.stop()
-        engine.reset()
-        engine.inputNode.removeTap(onBus: 0)
+        inputNode.removeTap(onBus: 0)
         recordingState = .stopped
+        avgPowers = []
+        startSampleTime = 0
 
         // Notify delegate with the file URL where the audio is saved.
         if let audioFileURL = audioFile?.url {
@@ -289,10 +306,13 @@ extension SCKRealTimeAudioRecorder {
 
     /// Sets up the audio engine, including the equalizer, reverb, and audio connections.
     private func configureEngine() {
+        engine.reset()
+        mixerNode.volume = 0
         // Attach nodes
-        engine.attach(mixer)
+        engine.attach(mixerNode)
         // Connect input node to mixer
-        engine.connect(inputNode, to: mixer, format: inputNode.outputFormat(forBus: 0))
+        engine.connect(inputNode, to: mixerNode, format: inputNode.outputFormat(forBus: 0))
+        engine.connect(mixerNode, to: engine.mainMixerNode, format: inputNode.outputFormat(forBus: 0))
         engine.prepare()
     }
 
@@ -300,40 +320,24 @@ extension SCKRealTimeAudioRecorder {
     ///
     /// - Throws: If the file setup fails.
     private func setupAudio() throws {
-        let tempDir = FileManager.default.temporaryDirectory
-        let fileURL = tempDir.appendingPathComponent(recordingDetails.fileName)
-        // Configure the audio settings.
-        let audioSettings: [String: Any] = [
-            AVFormatIDKey: Int(recordingDetails.format.audioFormatID),
-            AVLinearPCMIsNonInterleaved: false,
-            AVSampleRateKey: sampleRate,
-            AVNumberOfChannelsKey: isStereoSupported ? 2 : 1,
-            AVLinearPCMBitDepthKey: 16,
-            AVEncoderAudioQualityKey: AVAudioQuality.max.rawValue
-        ]
-
-        // Create a new audio file for writing.
-        let audioFile = try AVAudioFile(forWriting: fileURL, settings: audioSettings)
-        self.audioFile = audioFile
+        audioFile = try AVAudioFile(forWriting: fileURL, settings: audioSettings)
     }
 
     /// Installs a tap on the input node to capture real-time audio buffers during recording.
     private func setupRealTimeAudioOutput() {
+        guard engine.isRunning else { return }
+
         let inputFormat = inputNode.outputFormat(forBus: 0)
         // Ensure that the engine is running before installing the tap
-        if engine.isRunning {
-            inputNode.installTap(
-                onBus: 0,
-                bufferSize: 1024,
-                format: inputFormat,
-                block: { [weak self] (buffer, time) in
-                    guard let self else { return }
-                    handleAudioBuffer(buffer, time: time)
-                }
-            )
-        } else {
-            print("Audio engine is not running when trying to install tap.")
-        }
+        inputNode.installTap(
+            onBus: 0,
+            bufferSize: 1024,
+            format: inputFormat,
+            block: { [weak self] (buffer, time) in
+                guard let self else { return }
+                handleAudioBuffer(buffer, time: time)
+            }
+        )
     }
 }
 
