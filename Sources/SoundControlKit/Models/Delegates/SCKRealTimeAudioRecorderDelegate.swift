@@ -8,14 +8,17 @@
 import Foundation
 import AVFoundation
 
-@MainActor
 public protocol SCKRealTimeAudioRecorderDelegate: AnyObject {
     /// Called when the recording state changes.
-    func audioRecorderDidChangeRecordingState(_ audioRecorder: SCKRealTimeAudioRecorder, state: SCKRecordingState) async
+    func audioRecorderDidChangeRecordingState(_ audioRecorder: SCKRealTimeAudioRecorder, state: SCKRecordingState)
 
     /// Called when the recording is finished.
-    func audioRecorderDidFinishRecording(_ audioRecorder: SCKRealTimeAudioRecorder, at location: URL) async
+    func audioRecorderDidFinishRecording(_ audioRecorder: SCKRealTimeAudioRecorder, at location: URL)
 
     /// Called with real-time audio buffers for processing.
-    func audioRecorderDidReceiveRealTimeAudioBuffer(_ audioRecorder: SCKRealTimeAudioRecorder, buffer: AVAudioPCMBuffer) async
+    func audioRecorderDidReceiveRealTimeAudioBuffer(_ audioRecorder: SCKRealTimeAudioRecorder, buffer: AVAudioPCMBuffer)
+
+    func audioRecorderDidUpdateAveragePower(_ audioRecorder: SCKRealTimeAudioRecorder, avgPowers: [Float])
+    
+    func audioRecorderDidUpdateTime(_ audioRecorder: SCKRealTimeAudioRecorder, time: String)
 }

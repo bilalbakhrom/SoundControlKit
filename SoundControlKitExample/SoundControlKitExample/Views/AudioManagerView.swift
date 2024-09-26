@@ -10,54 +10,37 @@ import AVFoundation
 
 struct AudioManagerView: View {
     @StateObject private var viewModel = AudioManagerViewModel()
-
-    @State private var recordingCurrentTime: String = "00:00"
+    
     @State private var playbackProgress: Double = 0
     @State private var playbackCurrentTime: String = "00:00"
     @State private var playbackRemainingTime: String = "-00:00"
 
     var body: some View {
         NavigationView {
-            if let realTimeRecorder = viewModel.realTimeRecorder {
-                contentWithPublishers
-                    .onReceive(realTimeRecorder.recordingCurrentTimePublisher) { timeInMiniutesAndSeconds in
-                        recordingCurrentTime = timeInMiniutesAndSeconds
-                    }
-                    .onReceive(realTimeRecorder.recordingPowerPublisher) { avgPowers in
-                        withAnimation(.linear(duration: 0.1)) {
-                            viewModel.avgPowers = Array(avgPowers.reversed())
-                        }
-                    }
-            } else {
-                contentWithPublishers
-            }
+            content
+                .padding(.top, 16)
+                .navigationTitle("All Recordings")
+                .navigationBarTitleDisplayMode(.inline)
+                .onReceive(viewModel.audioManager.playbackProgressPublisher) { progress in
+                    playbackProgress = progress
+                }
+                .onReceive(viewModel.audioManager.playbackCurrentTimePublisher) { duration in
+                    playbackCurrentTime = duration
+                }
+                .onReceive(viewModel.audioManager.playbackRemainingTimePublisher) { duration in
+                    playbackRemainingTime = duration
+                }
+                .onAppear {
+                    viewModel.prepare()
+                }
+                .alert(isPresented: $viewModel.isPermissionAlertPresented) {
+                    Alert(
+                        title: Text("Microphone Access Required"),
+                        message: Text("Please enable microphone access in Settings to use this feature."),
+                        dismissButton: .cancel()
+                    )
+                }
         }
-    }
-
-    private var contentWithPublishers: some View {
-        content
-            .padding(.top, 16)
-            .navigationTitle("All Recordings")
-            .navigationBarTitleDisplayMode(.inline)
-            .onReceive(viewModel.audioManager.playbackProgressPublisher) { progress in
-                playbackProgress = progress
-            }
-            .onReceive(viewModel.audioManager.playbackCurrentTimePublisher) { duration in
-                playbackCurrentTime = duration
-            }
-            .onReceive(viewModel.audioManager.playbackRemainingTimePublisher) { duration in
-                playbackRemainingTime = duration
-            }
-            .onAppear {
-                viewModel.prepare()
-            }
-            .alert(isPresented: $viewModel.isPermissionAlertPresented) {
-                Alert(
-                    title: Text("Microphone Access Required"),
-                    message: Text("Please enable microphone access in Settings to use this feature."),
-                    dismissButton: .cancel()
-                )
-            }
     }
 
     private var content: some View {
@@ -79,7 +62,7 @@ struct AudioManagerView: View {
 
             VStack(spacing: 10) {
                 if viewModel.isRecording {
-                    Text(recordingCurrentTime)
+                    Text(viewModel.recordingCurrentTime)
                         .font(.system(size: 15, weight: .medium))
                         .foregroundColor(.white.opacity(0.6))
                         .transition(.move(edge: .bottom).combined(with: .opacity))
@@ -92,7 +75,7 @@ struct AudioManagerView: View {
                                     Rectangle()
                                         .fill(Color.red)
                                         .frame(width: 1.5)
-                                        .frame(height: power == 0 ? 1.5 : power * 10)
+                                        .frame(height: power * 35)
                                 }
                                 .frame(height: 52)
                             }

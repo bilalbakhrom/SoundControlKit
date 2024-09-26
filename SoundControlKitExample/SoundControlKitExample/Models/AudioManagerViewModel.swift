@@ -12,20 +12,22 @@ import AVFoundation
 class AudioManagerViewModel: ObservableObject {
     private(set) var audioManager: SCKAudioManager!
     private(set) var realTimeRecorder: SCKRealTimeAudioRecorder!
+
     @Published var recordingURL: URL?
     @Published var isRecording: Bool = false
     @Published var isPlaying: Bool = false
     @Published var avgPowers: [Float] = []
     @Published var isPermissionAlertPresented: Bool = false
-    
+    @Published var recordingCurrentTime: String = "00:00"
+
     init() {
         audioManager = SCKAudioManager(format: .wav, delegate: self)
+        realTimeRecorder = SCKRealTimeAudioRecorder(outputFormat: .aac, delegate: self)
+        realTimeRecorder.configure()
     }
     
     func prepare() {
         Task { @MainActor in
-            realTimeRecorder = SCKRealTimeAudioRecorder(outputFormat: .aac)
-            realTimeRecorder.delegate = self
             try? await audioManager.updateOrientation(interfaceOrientation: .portrait)
         }
 
@@ -40,9 +42,9 @@ class AudioManagerViewModel: ObservableObject {
     @MainActor
     func recordAndStop() {
         if isRecording {
-            Task { await realTimeRecorder.stop() }
+            realTimeRecorder.stop()
         } else {
-            Task { try? await realTimeRecorder.start() }
+            try? realTimeRecorder.start()
         }
 
 //        isRecording ? audioManager.stopRecording() : audioManager.record()
@@ -124,7 +126,13 @@ extension AudioManagerViewModel: SCKRealTimeAudioRecorderDelegate {
         print("[DEBUG] Recording finished at \(location)")
     }
     
-    func audioRecorderDidReceiveRealTimeAudioBuffer(_ audioRecorder: SCKRealTimeAudioRecorder, buffer: AVAudioPCMBuffer) {
-        print("[DEBUG] Did receive buffer")
+    func audioRecorderDidReceiveRealTimeAudioBuffer(_ audioRecorder: SCKRealTimeAudioRecorder, buffer: AVAudioPCMBuffer) {}
+
+    func audioRecorderDidUpdateAveragePower(_ audioRecorder: SCKRealTimeAudioRecorder, avgPowers: [Float]) {
+        Task { @MainActor in self.avgPowers = avgPowers.reversed() }
+    }
+
+    func audioRecorderDidUpdateTime(_ audioRecorder: SCKRealTimeAudioRecorder, time: String) {
+        Task { @MainActor in self.recordingCurrentTime = time }
     }
 }

@@ -9,13 +9,7 @@ import UIKit
 import AVFoundation
 import Combine
 
-/// A real-time audio recorder that allows recording and processing audio buffers in real time.
-/// It supports configurable output formats, real-time audio effects like equalizer and reverb,
-/// and provides delegate methods for recording state and real-time audio buffer handling.
-@MainActor
 public class SCKRealTimeAudioRecorder: SCKAudioSessionManager {
-    // MARK: - Properties
-
     /// The audio engine used for managing input, output, and effects during recording.
     private let engine: AVAudioEngine
     /// The input node that captures audio from the device's microphone.
@@ -24,24 +18,28 @@ public class SCKRealTimeAudioRecorder: SCKAudioSessionManager {
     private let outputNode: AVAudioOutputNode
     /// The node to hold input nodes.
     private let mixer: AVAudioMixerNode
-
-    /// The current state of the audio recording (stopped, recording, or paused).
-    private var recordingState: SCKRecordingState = .stopped {
-        didSet { Task { @MainActor in await triggerRecordingState(recordingState) }}
-    }
     /// Details about the recording, including filename and format.
     private(set) var recordingDetails: RecordingDetails
     /// The audio file being written to during recording.
     private var audioFile: AVAudioFile?
     /// A weak reference to the delegate that handles recording events and real-time audio data.
     public weak var delegate: SCKRealTimeAudioRecorderDelegate?
-    /// The current time publisher subject for recording.
-    private let recordingCurrentTimeSubject = PassthroughSubject<String, Never>()
-    private let recordingPowerSubject = PassthroughSubject<[Float], Never>()
+    /// Holding recording meter levels.
     private var avgPowers: [Float] = []
-
     private let sampleRate: Double = 44_100.0
     private var startSampleTime: AVAudioFramePosition = 0
+    /// The current state of the audio recording (stopped, recording, or paused).
+    private var recordingState: SCKRecordingState = .stopped {
+        didSet { triggerRecordingState(recordingState) }
+    }
+    /// Holds separate locks for each method
+    private let locks = [
+        NSLock(), // For recording state
+        NSLock(), // For recording end
+        NSLock(), // For recording buffer
+        NSLock(), // For average power
+        NSLock()  // For recording time
+    ]
 
     /// Checks if stereo is supported based on the current input node format.
     private var isStereoSupported: Bool {
@@ -57,15 +55,6 @@ public class SCKRealTimeAudioRecorder: SCKAudioSessionManager {
         }
     }
 
-    /// Publishes the current time for recording in the format: `mm:ss`.
-    public var recordingCurrentTimePublisher: AnyPublisher<String, Never> {
-        recordingCurrentTimeSubject.eraseToAnyPublisher()
-    }
-
-    public var recordingPowerPublisher: AnyPublisher<[Float], Never> {
-        recordingPowerSubject.eraseToAnyPublisher()
-    }
-
     private var canStartRecording: Bool {
         recordingState != .recording && isRecordPremissionGranted
     }
@@ -77,17 +66,18 @@ public class SCKRealTimeAudioRecorder: SCKAudioSessionManager {
     /// - Parameters:
     ///   - fileName: The naming convention for the output file (default is date).
     ///   - outputFormat: The format for the audio recording (default is AAC).
-    public init(fileName: SCKRecordingFileNameOption = .date, outputFormat: SCKOutputFormat = .aac) {
+    public init(fileName: SCKRecordingFileNameOption = .date, outputFormat: SCKOutputFormat = .aac, delegate: SCKRealTimeAudioRecorderDelegate? = nil) {
         self.recordingDetails = RecordingDetails(option: fileName, format: outputFormat)
         self.engine = AVAudioEngine()
         self.mixer = AVAudioMixerNode()
         self.inputNode = engine.inputNode
         self.outputNode = engine.outputNode
+        self.delegate = delegate
         super.init()
-
-        Task { await configure() }
     }
+}
 
+extension SCKRealTimeAudioRecorder {
     // MARK: - Actions
 
     /// Handles the real-time audio buffer by writing to the audio file and notifying the delegate.
@@ -95,10 +85,10 @@ public class SCKRealTimeAudioRecorder: SCKAudioSessionManager {
     /// - Parameters:
     ///   - buffer: The audio buffer to be processed.
     ///   - time: The AVAudioTime associated with the buffer.
-    private func handleAudioBuffer(_ buffer: AVAudioPCMBuffer, time: AVAudioTime) async {
+    private func handleAudioBuffer(_ buffer: AVAudioPCMBuffer, time: AVAudioTime) {
         do {
             // Notify delegate with real-time audio buffer data.
-            await triggerRecordingBuffer(buffer)
+            triggerRecordingBuffer(buffer)
             // Calculate and send average power
             sendAveragePower(with: buffer)
             // Update and send current recording time using the AVAudioTime
@@ -112,16 +102,43 @@ public class SCKRealTimeAudioRecorder: SCKAudioSessionManager {
 
     // MARK: - Triggers
 
-    private func triggerRecordingState(_ recordingState: SCKRecordingState) async {
-        await delegate?.audioRecorderDidChangeRecordingState(self, state: recordingState)
+    private func performDelegateCall(lockIndex: LockIndex, action: (SCKRealTimeAudioRecorderDelegate) -> Void) {
+        guard let delegate else { return }
+        let lock = locks[lockIndex.index]
+
+        lock.lock()
+        action(delegate)
+        lock.unlock()
     }
 
-    private func triggerRecordingEnd(_ audioFileURL: URL) async {
-        await delegate?.audioRecorderDidFinishRecording(self, at: audioFileURL)
+    private func triggerRecordingState(_ recordingState: SCKRecordingState) {
+        performDelegateCall(lockIndex: .recordingState) { delegate in
+            delegate.audioRecorderDidChangeRecordingState(self, state: recordingState)
+        }
     }
 
-    private func triggerRecordingBuffer(_ buffer: AVAudioPCMBuffer) async {
-        await delegate?.audioRecorderDidReceiveRealTimeAudioBuffer(self, buffer: buffer)
+    private func triggerRecordingEnd(_ audioFileURL: URL) {
+        performDelegateCall(lockIndex: .recordingEnd) { delegate in
+            delegate.audioRecorderDidFinishRecording(self, at: audioFileURL)
+        }
+    }
+
+    private func triggerRecordingBuffer(_ buffer: AVAudioPCMBuffer) {
+        performDelegateCall(lockIndex: .recordingBuffer) { delegate in
+            delegate.audioRecorderDidReceiveRealTimeAudioBuffer(self, buffer: buffer)
+        }
+    }
+
+    private func triggerAvgPower(_ avgPowers: [Float]) {
+        performDelegateCall(lockIndex: .avgPower) { delegate in
+            delegate.audioRecorderDidUpdateAveragePower(self, avgPowers: avgPowers)
+        }
+    }
+
+    private func triggerRecordingTime(_ time: String) {
+        performDelegateCall(lockIndex: .recordingTime) { delegate in
+            delegate.audioRecorderDidUpdateTime(self, time: time)
+        }
     }
 
     /// Updates the average power based on the provided buffer and sends it to the recordingPowerSubject.
@@ -129,37 +146,33 @@ public class SCKRealTimeAudioRecorder: SCKAudioSessionManager {
         guard let channelData = buffer.floatChannelData else { return }
         let channelDataValue = channelData.pointee
         let channelDataValueArray = stride(
-          from: 0,
-          to: Int(buffer.frameLength),
-          by: buffer.stride)
-          .map { channelDataValue[$0] }
+            from: 0,
+            to: Int(buffer.frameLength),
+            by: buffer.stride
+        ).map { channelDataValue[$0] }
 
-        let rms = sqrt(channelDataValueArray.map {
-          return $0 * $0
-        }
-        .reduce(0, +) / Float(buffer.frameLength))
+        let rms = sqrt(channelDataValueArray.map { $0 * $0 }
+            .reduce(0, +) / Float(buffer.frameLength))
 
-        let avgPower = 20 * log10(rms)
-        avgPowers.append(scaledPower(power: avgPower))
-
-        // Send average powers
-        recordingPowerSubject.send(avgPowers)
+        let power = scaledPower(rms: rms)
+        print("Power: \(power)")
+        avgPowers.append(power)
+        triggerAvgPower(avgPowers)
     }
 
-    private func scaledPower(power: Float) -> Float {
-      guard power.isFinite else {
-        return 0.0
-      }
+    private func scaledPower(rms: Float) -> Float {
+        let power = rms > 0 ? 20 * log10(rms) : -Float.infinity
+        let minDb: Float = -80
 
-      let minDb: Float = -80
+        guard power.isFinite else { return 0.0 }
 
-      if power < minDb {
-        return 0.0
-      } else if power >= 1.0 {
-        return 1.0
-      } else {
-        return (abs(minDb) - abs(power)) / abs(minDb)
-      }
+        if power < minDb {
+            return 0.0
+        } else if power >= 0 {
+            return 1.0
+        } else {
+            return (power - minDb) / (0 - minDb)
+        }
     }
 
     /// Updates and sends the current recording time using the provided AVAudioTime.
@@ -174,22 +187,23 @@ public class SCKRealTimeAudioRecorder: SCKAudioSessionManager {
         let seconds = Int(timeInSeconds) % 60
         let formattedTime = String(format: "%02d:%02d", minutes, seconds)
         // Send the formatted time
-        recordingCurrentTimeSubject.send(formattedTime)
+        triggerRecordingTime(formattedTime)
     }
 
     /// Sends a UINotificationFeedbackGenerator notification with a success feedback type.
     /// Delays execution briefly to allow for feedback sensation.
-    private func sendFeedbackNotification() async {
-        // Create and prepare a UINotificationFeedbackGenerator.
-        let generator = UINotificationFeedbackGenerator()
-        generator.prepare()
-        // Trigger a success notification feedback.
-        generator.notificationOccurred(.success)
-        // Introduce a brief delay for the feedback sensation.
-        try? await Task.sleep(nanoseconds: 100_000_000)
+    private func sendFeedbackNotification() {
+        Task { @MainActor in
+            // Create and prepare a UINotificationFeedbackGenerator.
+            let generator = UINotificationFeedbackGenerator()
+            generator.prepare()
+            // Trigger a success notification feedback.
+            generator.notificationOccurred(.success)
+            // Introduce a brief delay for the feedback sensation.
+            try? await Task.sleep(nanoseconds: 100_000_000)
+        }
     }
 }
-
 
 // MARK: - Recording Control
 
@@ -201,17 +215,17 @@ extension SCKRealTimeAudioRecorder {
     /// audio session for recording, and start the audio engine to begin recording.
     ///
     /// - Throws: `SCKAudioRecorderError` if the audio session configuration or audio engine fails.
-    public func start() async throws {
+    public func start() throws {
         guard canStartRecording else { return }
 
         // Start recording and update the state to recording.
         do {
             // Provide haptic feedback if starting from the stopped state.
             if recordingState == .stopped {
-                await sendFeedbackNotification()
+                sendFeedbackNotification()
             }
 
-            await configure()
+            configure()
             try engine.start()
             startSampleTime = engine.inputNode.lastRenderTime?.sampleTime ?? 0
             setupRealTimeAudioOutput()
@@ -222,7 +236,7 @@ extension SCKRealTimeAudioRecorder {
     }
 
     /// Stops the recording process and saves the recorded file.
-    public func stop() async {
+    public func stop() {
         engine.stop()
         engine.reset()
         engine.inputNode.removeTap(onBus: 0)
@@ -230,13 +244,13 @@ extension SCKRealTimeAudioRecorder {
 
         // Notify delegate with the file URL where the audio is saved.
         if let audioFileURL = audioFile?.url {
-            await triggerRecordingEnd(audioFileURL)
+            triggerRecordingEnd(audioFileURL)
         }
     }
 
-    private func stopRecordingIfNeeded() async {
+    private func stopRecordingIfNeeded() {
         guard recordingState == .recording else { return }
-        await stop()
+        stop()
     }
 }
 
@@ -247,23 +261,23 @@ extension SCKRealTimeAudioRecorder {
     /// Updates the filename for the output file and reconfigures the audio engine.
     ///
     /// - Parameter option: The new file naming convention.
-    public func setFileName(_ option: SCKRecordingFileNameOption) async {
-        await stopRecordingIfNeeded()
+    public func setFileName(_ option: SCKRecordingFileNameOption) {
+        stopRecordingIfNeeded()
         recordingDetails = RecordingDetails(option: option, format: recordingDetails.format)
-        await configure()
+        configure()
     }
 
     /// Updates the output format for the recording and reconfigures the audio engine.
     ///
     /// - Parameter newFormat: The new output format.
-    public func setOutputFormat(_ newFormat: SCKOutputFormat) async {
-        await stopRecordingIfNeeded()
+    public func setOutputFormat(_ newFormat: SCKOutputFormat) {
+        stopRecordingIfNeeded()
         recordingDetails = RecordingDetails(option: recordingDetails.option, format: newFormat)
-        await configure()
+        configure()
     }
 
     /// Configures the audio engine by setting up the audio file and real-time audio output.
-    private func configure() async {
+    public func configure() {
         do {
             try configurePlayAndRecordAudioSession()
             try setupAudio()
@@ -311,13 +325,30 @@ extension SCKRealTimeAudioRecorder {
             inputNode.installTap(
                 onBus: 0,
                 bufferSize: 1024,
-                format: inputFormat
-            ) { [weak self] buffer, time in
-                guard let self = self else { return }
-                Task { @MainActor in await self.handleAudioBuffer(buffer, time: time) }
-            }
+                format: inputFormat,
+                block: { [weak self] (buffer, time) in
+                    guard let self else { return }
+                    handleAudioBuffer(buffer, time: time)
+                }
+            )
         } else {
             print("Audio engine is not running when trying to install tap.")
+        }
+    }
+}
+
+extension SCKRealTimeAudioRecorder {
+    private enum LockIndex {
+        case recordingState, recordingEnd, recordingBuffer, avgPower, recordingTime
+
+        var index: Int {
+            switch self {
+            case .recordingState: return 0
+            case .recordingEnd: return 1
+            case .recordingBuffer: return 2
+            case .avgPower: return 3
+            case .recordingTime: return 4
+            }
         }
     }
 }
