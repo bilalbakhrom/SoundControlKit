@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		D51476972CA3F7E0002C9035 /* SoundControlKit in Frameworks */ = {isa = PBXBuildFile; productRef = D51476962CA3F7E0002C9035 /* SoundControlKit */; };
+		D5198EA52CA598620045FD05 /* AudioListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D5198EA42CA598620045FD05 /* AudioListView.swift */; };
 		D56DA56F2B0A779E006CE22B /* SoundControlKitExampleApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = D56DA56E2B0A779E006CE22B /* SoundControlKitExampleApp.swift */; };
 		D56DA5732B0A77A0006CE22B /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = D56DA5722B0A77A0006CE22B /* Assets.xcassets */; };
 		D56DA5762B0A77A0006CE22B /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = D56DA5752B0A77A0006CE22B /* Preview Assets.xcassets */; };
@@ -19,6 +20,7 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		D5198EA42CA598620045FD05 /* AudioListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioListView.swift; sourceTree = "<group>"; };
 		D56DA56B2B0A779E006CE22B /* SoundControlKitExample.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = SoundControlKitExample.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		D56DA56E2B0A779E006CE22B /* SoundControlKitExampleApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SoundControlKitExampleApp.swift; sourceTree = "<group>"; };
 		D56DA5722B0A77A0006CE22B /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
@@ -93,6 +95,7 @@
 			children = (
 				D56DA56E2B0A779E006CE22B /* SoundControlKitExampleApp.swift */,
 				D56DA5822B0A77E2006CE22B /* AudioManagerView.swift */,
+				D5198EA42CA598620045FD05 /* AudioListView.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -194,6 +197,7 @@
 				D56DA56F2B0A779E006CE22B /* SoundControlKitExampleApp.swift in Sources */,
 				D56DA5852B0A77E2006CE22B /* PlaybackView.swift in Sources */,
 				D56DA5842B0A77E2006CE22B /* AudioManagerViewModel.swift in Sources */,
+				D5198EA52CA598620045FD05 /* AudioListView.swift in Sources */,
 				D56DA5862B0A77E2006CE22B /* RecorderButton.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
