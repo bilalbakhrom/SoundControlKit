@@ -8,28 +8,34 @@
 
 /* Begin PBXBuildFile section */
 		D51476972CA3F7E0002C9035 /* SoundControlKit in Frameworks */ = {isa = PBXBuildFile; productRef = D51476962CA3F7E0002C9035 /* SoundControlKit */; };
-		D5198EA52CA598620045FD05 /* AudioListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D5198EA42CA598620045FD05 /* AudioListView.swift */; };
+		D5198EAE2CA5AA290045FD05 /* Shared.swift in Sources */ = {isa = PBXBuildFile; fileRef = D5198EAD2CA5AA290045FD05 /* Shared.swift */; };
+		D5198EB42CA5AB720045FD05 /* SoundManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = D5198EB32CA5AB720045FD05 /* SoundManager.swift */; };
+		D5198EB62CA5ABEE0045FD05 /* RecordingListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D5198EB52CA5ABEE0045FD05 /* RecordingListView.swift */; };
+		D5198EB82CA5AC310045FD05 /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D5198EB72CA5AC310045FD05 /* HomeView.swift */; };
+		D5198EBA2CA5AC560045FD05 /* Indicator.swift in Sources */ = {isa = PBXBuildFile; fileRef = D5198EB92CA5AC560045FD05 /* Indicator.swift */; };
+		D5198EC02CA5AD910045FD05 /* View+CornerRadius.swift in Sources */ = {isa = PBXBuildFile; fileRef = D5198EBE2CA5AD910045FD05 /* View+CornerRadius.swift */; };
+		D5198EC22CA5AED80045FD05 /* PlayerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D5198EC12CA5AED80045FD05 /* PlayerView.swift */; };
 		D56DA56F2B0A779E006CE22B /* SoundControlKitExampleApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = D56DA56E2B0A779E006CE22B /* SoundControlKitExampleApp.swift */; };
 		D56DA5732B0A77A0006CE22B /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = D56DA5722B0A77A0006CE22B /* Assets.xcassets */; };
 		D56DA5762B0A77A0006CE22B /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = D56DA5752B0A77A0006CE22B /* Preview Assets.xcassets */; };
-		D56DA5842B0A77E2006CE22B /* AudioManagerViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = D56DA57D2B0A77E2006CE22B /* AudioManagerViewModel.swift */; };
-		D56DA5852B0A77E2006CE22B /* PlaybackView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D56DA57F2B0A77E2006CE22B /* PlaybackView.swift */; };
 		D56DA5862B0A77E2006CE22B /* RecorderButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = D56DA5802B0A77E2006CE22B /* RecorderButton.swift */; };
 		D56DA5872B0A77E2006CE22B /* PlayerButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = D56DA5812B0A77E2006CE22B /* PlayerButton.swift */; };
-		D56DA5882B0A77E2006CE22B /* AudioManagerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D56DA5822B0A77E2006CE22B /* AudioManagerView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		D5198EA42CA598620045FD05 /* AudioListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioListView.swift; sourceTree = "<group>"; };
+		D5198EAD2CA5AA290045FD05 /* Shared.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Shared.swift; sourceTree = "<group>"; };
+		D5198EB32CA5AB720045FD05 /* SoundManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SoundManager.swift; sourceTree = "<group>"; };
+		D5198EB52CA5ABEE0045FD05 /* RecordingListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecordingListView.swift; sourceTree = "<group>"; };
+		D5198EB72CA5AC310045FD05 /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
+		D5198EB92CA5AC560045FD05 /* Indicator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Indicator.swift; sourceTree = "<group>"; };
+		D5198EBE2CA5AD910045FD05 /* View+CornerRadius.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "View+CornerRadius.swift"; sourceTree = "<group>"; };
+		D5198EC12CA5AED80045FD05 /* PlayerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlayerView.swift; sourceTree = "<group>"; };
 		D56DA56B2B0A779E006CE22B /* SoundControlKitExample.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = SoundControlKitExample.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		D56DA56E2B0A779E006CE22B /* SoundControlKitExampleApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SoundControlKitExampleApp.swift; sourceTree = "<group>"; };
 		D56DA5722B0A77A0006CE22B /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		D56DA5752B0A77A0006CE22B /* Preview Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = "Preview Assets.xcassets"; sourceTree = "<group>"; };
-		D56DA57D2B0A77E2006CE22B /* AudioManagerViewModel.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = AudioManagerViewModel.swift; sourceTree = "<group>"; };
-		D56DA57F2B0A77E2006CE22B /* PlaybackView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = PlaybackView.swift; sourceTree = "<group>"; };
 		D56DA5802B0A77E2006CE22B /* RecorderButton.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = RecorderButton.swift; sourceTree = "<group>"; };
 		D56DA5812B0A77E2006CE22B /* PlayerButton.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = PlayerButton.swift; sourceTree = "<group>"; };
-		D56DA5822B0A77E2006CE22B /* AudioManagerView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = AudioManagerView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -44,6 +50,14 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		D5198EBF2CA5AD910045FD05 /* Extensions */ = {
+			isa = PBXGroup;
+			children = (
+				D5198EBE2CA5AD910045FD05 /* View+CornerRadius.swift */,
+			);
+			path = Extensions;
+			sourceTree = "<group>";
+		};
 		D56DA5622B0A779E006CE22B = {
 			isa = PBXGroup;
 			children = (
@@ -63,6 +77,7 @@
 		D56DA56D2B0A779E006CE22B /* SoundControlKitExample */ = {
 			isa = PBXGroup;
 			children = (
+				D5198EBF2CA5AD910045FD05 /* Extensions */,
 				D56DA58C2B0A78CA006CE22B /* Views */,
 				D56DA57E2B0A77E2006CE22B /* Components */,
 				D56DA58D2B0A78CD006CE22B /* Models */,
@@ -83,7 +98,6 @@
 		D56DA57E2B0A77E2006CE22B /* Components */ = {
 			isa = PBXGroup;
 			children = (
-				D56DA57F2B0A77E2006CE22B /* PlaybackView.swift */,
 				D56DA5802B0A77E2006CE22B /* RecorderButton.swift */,
 				D56DA5812B0A77E2006CE22B /* PlayerButton.swift */,
 			);
@@ -94,8 +108,10 @@
 			isa = PBXGroup;
 			children = (
 				D56DA56E2B0A779E006CE22B /* SoundControlKitExampleApp.swift */,
-				D56DA5822B0A77E2006CE22B /* AudioManagerView.swift */,
-				D5198EA42CA598620045FD05 /* AudioListView.swift */,
+				D5198EB72CA5AC310045FD05 /* HomeView.swift */,
+				D5198EB92CA5AC560045FD05 /* Indicator.swift */,
+				D5198EB52CA5ABEE0045FD05 /* RecordingListView.swift */,
+				D5198EC12CA5AED80045FD05 /* PlayerView.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -103,7 +119,8 @@
 		D56DA58D2B0A78CD006CE22B /* Models */ = {
 			isa = PBXGroup;
 			children = (
-				D56DA57D2B0A77E2006CE22B /* AudioManagerViewModel.swift */,
+				D5198EB32CA5AB720045FD05 /* SoundManager.swift */,
+				D5198EAD2CA5AA290045FD05 /* Shared.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -192,13 +209,16 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				D56DA5882B0A77E2006CE22B /* AudioManagerView.swift in Sources */,
+				D5198EB62CA5ABEE0045FD05 /* RecordingListView.swift in Sources */,
+				D5198EAE2CA5AA290045FD05 /* Shared.swift in Sources */,
+				D5198EB82CA5AC310045FD05 /* HomeView.swift in Sources */,
+				D5198EC22CA5AED80045FD05 /* PlayerView.swift in Sources */,
+				D5198EC02CA5AD910045FD05 /* View+CornerRadius.swift in Sources */,
+				D5198EBA2CA5AC560045FD05 /* Indicator.swift in Sources */,
 				D56DA5872B0A77E2006CE22B /* PlayerButton.swift in Sources */,
 				D56DA56F2B0A779E006CE22B /* SoundControlKitExampleApp.swift in Sources */,
-				D56DA5852B0A77E2006CE22B /* PlaybackView.swift in Sources */,
-				D56DA5842B0A77E2006CE22B /* AudioManagerViewModel.swift in Sources */,
-				D5198EA52CA598620045FD05 /* AudioListView.swift in Sources */,
 				D56DA5862B0A77E2006CE22B /* RecorderButton.swift in Sources */,
+				D5198EB42CA5AB720045FD05 /* SoundManager.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -343,6 +363,7 @@
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				IPHONEOS_DEPLOYMENT_TARGET = 15.6;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -375,6 +396,7 @@
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				IPHONEOS_DEPLOYMENT_TARGET = 15.6;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",

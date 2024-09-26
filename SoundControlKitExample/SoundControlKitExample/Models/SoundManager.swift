@@ -1,5 +1,5 @@
 //
-//  AudioManagerViewModel.swift
+//  SoundManager.swift
 //  AudioRecorder
 //
 //  Created by Bilal Bakhrom on 2023-11-19.
@@ -10,7 +10,7 @@ import SoundControlKit
 import AVFoundation
 import Combine
 
-final class AudioManagerViewModel: NSObject, ObservableObject {
+final class SoundManager: NSObject, ObservableObject {
     private(set) var realTimeRecorder: SCKRealTimeAudioRecorder!
 
     @Published var isRecording: Bool = false
@@ -28,9 +28,10 @@ final class AudioManagerViewModel: NSObject, ObservableObject {
     private var cancellables = Set<AnyCancellable>()
 
     override init() {
+        realTimeRecorder = SCKRealTimeAudioRecorder(fileName: .dateWithTime, outputFormat: .aac)
         super.init()
 
-        realTimeRecorder = SCKRealTimeAudioRecorder(fileName: .dateWithTime, outputFormat: .aac, delegate: self)
+        realTimeRecorder.delegate = self
         realTimeRecorder.configure()
     }
 
@@ -137,9 +138,7 @@ final class AudioManagerViewModel: NSObject, ObservableObject {
     private func collectAudioFiles() -> [URL] {
         let fileManager = FileManager.default
         let temporaryDirectory = fileManager.temporaryDirectory
-
-        // Define the audio file extensions you want to look for
-        let audioExtensions = ["mp3", "wav", "m4a", "aac"]
+        let audioExtensions = SCKOutputFormat.supportedFormats
 
         do {
             // Get all files in the temporary directory
@@ -157,47 +156,30 @@ final class AudioManagerViewModel: NSObject, ObservableObject {
     }
 }
 
-extension AudioManagerViewModel: SCKAudioManagerDelegate {
+extension SoundManager: SCKAudioManagerDelegate {
     func audioManagerDidChangeRecordingState(_ audioManager: SCKAudioManager, state: SCKRecordingState) {
-        Task {
-            await MainActor.run {
-                isRecording = state == .recording
-            }
-        }
+        Task { @MainActor in isRecording = state == .recording }
     }
 
     func audioManagerDidChangePlaybackState(_ audioManager: SCKAudioManager, state: SCKPlaybackState) {
-        Task {
-            await MainActor.run {
-                isPlaying = state == .playing
-            }
-        }
+        Task { @MainActor in isPlaying = state == .playing }
     }
 
     func audioManagerDidFinishRecording(_ audioManager: SCKAudioManager, at location: URL) {
         avgPowers = []
         prepare()
-        print("[DEBUG] Recording finished at \(location)")
     }
-
-    func audioManagerDidFinishPlaying(_ audioManager: SCKAudioManager) {}
-
-    func audioManagerLastRecordingLocation(_ audioManager: SCKAudioManager, location: URL) {}
 }
 
-extension AudioManagerViewModel: SCKRealTimeAudioRecorderDelegate {
+extension SoundManager: SCKRealTimeAudioRecorderDelegate {
     func audioRecorderDidChangeRecordingState(_ audioRecorder: SCKRealTimeAudioRecorder, state: SCKRecordingState) {
         isRecording = state == .recording
-        print("[DEBUG] Recording did change state to \(state)")
     }
 
     func audioRecorderDidFinishRecording(_ audioRecorder: SCKRealTimeAudioRecorder, at location: URL) {
         avgPowers = []
         prepare()
-        print("[DEBUG] Recording finished at \(location)")
     }
-
-    func audioRecorderDidReceiveRealTimeAudioBuffer(_ audioRecorder: SCKRealTimeAudioRecorder, buffer: AVAudioPCMBuffer) {}
 
     func audioRecorderDidUpdateAveragePower(_ audioRecorder: SCKRealTimeAudioRecorder, avgPowers: [Float]) {
         Task { @MainActor in self.avgPowers = avgPowers.reversed() }
@@ -208,7 +190,7 @@ extension AudioManagerViewModel: SCKRealTimeAudioRecorderDelegate {
     }
 }
 
-extension AudioManagerViewModel: AVAudioPlayerDelegate {
+extension SoundManager: AVAudioPlayerDelegate {
     func audioPlayerDidFinishPlaying(_ player: AVAudioPlayer, successfully flag: Bool) {
         isPlaying = false
         currentAudioTime = 0

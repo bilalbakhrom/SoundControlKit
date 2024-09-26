@@ -22,3 +22,11 @@ public protocol SCKRealTimeAudioRecorderDelegate: AnyObject {
     
     func audioRecorderDidUpdateTime(_ audioRecorder: SCKRealTimeAudioRecorder, time: String)
 }
+
+extension SCKRealTimeAudioRecorderDelegate {
+    public func audioRecorderDidReceiveRealTimeAudioBuffer(_ audioRecorder: SCKRealTimeAudioRecorder, buffer: AVAudioPCMBuffer) {}
+
+    public func audioRecorderDidUpdateAveragePower(_ audioRecorder: SCKRealTimeAudioRecorder, avgPowers: [Float]) {}
+
+    public func audioRecorderDidUpdateTime(_ audioRecorder: SCKRealTimeAudioRecorder, time: String) {}
+}

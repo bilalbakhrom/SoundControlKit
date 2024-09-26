@@ -12,7 +12,7 @@ struct RecorderButton: View {
     var action: () -> Void
     
     private var itemSize: CGFloat {
-        isRecording ? 20 : 40
+        isRecording ? 30 : 45
     }
     
     private var cornerRadius: CGFloat {
@@ -29,10 +29,10 @@ struct RecorderButton: View {
                     .frame(width: itemSize, height: itemSize)
                     .clipShape(RoundedRectangle(cornerRadius: cornerRadius))
             }
-            .frame(width: 52, height: 52)
-            .background(Color.black)
+            .frame(width: 60, height: 60)
+            .background(Color.clear)
             .overlay(
-                RoundedRectangle(cornerRadius: 26)
+                RoundedRectangle(cornerRadius: 30)
                     .strokeBorder(Color.white, lineWidth: 3)
             )
         }

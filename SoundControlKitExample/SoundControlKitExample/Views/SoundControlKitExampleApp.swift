@@ -11,8 +11,9 @@ import SwiftUI
 struct SoundControlKitExampleApp: App {
     var body: some Scene {
         WindowGroup {
-            AudioManagerView()
+            HomeView()
                 .preferredColorScheme(.dark)
+                .environmentObject(SoundManager())
         }
     }
 }
