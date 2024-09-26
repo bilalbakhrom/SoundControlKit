@@ -27,6 +27,14 @@ final class SoundManager: NSObject, ObservableObject {
     private var audioPlayer: AVAudioPlayer?
     private var cancellables = Set<AnyCancellable>()
 
+    public var isRecordPremissionGranted: Bool {
+        if #available(iOS 17.0, *) {
+            return AVAudioApplication.shared.recordPermission == .granted
+        } else {
+            return AVAudioSession.sharedInstance().recordPermission == .granted
+        }
+    }
+
     override init() {
         realTimeRecorder = SCKRealTimeAudioRecorder(fileName: .dateWithTime, outputFormat: .aac)
         super.init()
@@ -40,6 +48,11 @@ final class SoundManager: NSObject, ObservableObject {
     }
 
     func recordAndStop() {
+        guard isRecordPremissionGranted else {
+            askRecordingPermission()
+            return
+        }
+        
         if isRecording {
             realTimeRecorder.stop()
         } else {

@@ -8,9 +8,9 @@
 import SwiftUI
 
 struct PlayerView: View {
-    @EnvironmentObject var soundManager: SoundManager
-    let audioURL: URL
-    let index: Int
+    @EnvironmentObject private var soundManager: SoundManager
+    private let audioURL: URL
+    private let index: Int
 
     private var isPlaying: Bool {
         soundManager.currentlyPlayingIndex == index && soundManager.isPlaying
@@ -36,7 +36,6 @@ struct PlayerView: View {
     var body: some View {
         HStack {
             VStack(alignment: .leading, spacing: 5) {
-                // Recording file name
                 Text(audioURL.lastPathComponent)
                     .font(.headline)
 
@@ -46,7 +45,6 @@ struct PlayerView: View {
                         .foregroundColor(.white.opacity(0.6))
                 }
 
-                // Time info (elapsed time / total time)
                 Text("\(formattedTime(soundManager.currentAudioTime)) / \(formattedTime(soundManager.totalAudioDuration))")
                     .font(.caption)
                     .foregroundColor(.white.opacity(0.6))
@@ -55,12 +53,11 @@ struct PlayerView: View {
             Spacer()
 
             // Play/Pause button
-            Button(action: {
-                // Check if index is still valid before playing audio
+            Button {
                 if index < soundManager.audioURLs.count {
                     soundManager.playAudio(at: index)
                 }
-            }) {
+            } label: {
                 Image(systemName: isPlaying ? "pause.circle.fill" : "play.circle.fill")
                     .resizable()
                     .frame(width: 30, height: 30)
@@ -68,7 +65,7 @@ struct PlayerView: View {
             }
         }
         .padding(.vertical, 8)
-        .contentShape(Rectangle())  // Ensures tap area is large
+        .contentShape(Rectangle())
     }
 
     private func formattedTime(_ time: TimeInterval) -> String {
