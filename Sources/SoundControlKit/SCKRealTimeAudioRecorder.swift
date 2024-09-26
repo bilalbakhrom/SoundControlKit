@@ -171,7 +171,6 @@ extension SCKRealTimeAudioRecorder {
             .reduce(0, +) / Float(buffer.frameLength))
 
         let power = scaledPower(rms: rms)
-        print("Power: \(power)")
         avgPowers.append(power)
         triggerAvgPower(avgPowers)
     }
@@ -243,7 +242,6 @@ extension SCKRealTimeAudioRecorder {
 
             configure()
             try engine.start()
-            startSampleTime = engine.mainMixerNode.lastRenderTime?.sampleTime ?? 0
             setupRealTimeAudioOutput()
             recordingState = .recording
         } catch {
@@ -254,7 +252,10 @@ extension SCKRealTimeAudioRecorder {
     /// Stops the recording process and saves the recorded file.
     public func stop() {
         engine.stop()
+        engine.disconnectNodeInput(inputNode)
         inputNode.removeTap(onBus: 0)
+        mixerNode.removeTap(onBus: 0)
+        engine.reset()
         recordingState = .stopped
         avgPowers = []
         startSampleTime = 0
@@ -306,7 +307,6 @@ extension SCKRealTimeAudioRecorder {
 
     /// Sets up the audio engine, including the equalizer, reverb, and audio connections.
     private func configureEngine() {
-        engine.reset()
         mixerNode.volume = 0
         // Attach nodes
         engine.attach(mixerNode)
@@ -335,6 +335,11 @@ extension SCKRealTimeAudioRecorder {
             format: inputFormat,
             block: { [weak self] (buffer, time) in
                 guard let self else { return }
+
+                if startSampleTime == 0 {
+                    startSampleTime = time.sampleTime
+                }
+
                 handleAudioBuffer(buffer, time: time)
             }
         )
