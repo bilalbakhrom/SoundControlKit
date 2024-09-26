@@ -17,15 +17,7 @@ final class SoundManager: NSObject, ObservableObject {
     @Published var avgPowers: [Float] = []
     @Published var isPermissionAlertPresented: Bool = false
     @Published var recordingCurrentTime: String = "00:00"
-
-    @Published var audioURLs: [URL] = []
-    @Published var currentAudioTime: TimeInterval = 0
-    @Published var totalAudioDuration: TimeInterval = 0
-    @Published var isPlaying: Bool = false
-    @Published var currentlyPlayingIndex: Int?
-
-    private var audioPlayer: AVAudioPlayer?
-    private var cancellables = Set<AnyCancellable>()
+    @Published var audioPlayers: [SCKAudioPlayer] = []
 
     public var isRecordPremissionGranted: Bool {
         if #available(iOS 17.0, *) {
@@ -66,72 +58,21 @@ final class SoundManager: NSObject, ObservableObject {
 
     func loadAudioFiles() {
         // Load audio files from temporary directory
-        self.audioURLs = collectAudioFiles()
-    }
-
-    func playAudio(at index: Int) {
-        if currentlyPlayingIndex == index {
-            // If the same audio is tapped, stop it
-            stopAudio()
-            return
-        }
-
-        // Stop any currently playing audio
-        stopAudio()
-
-        // Play the selected audio
-        guard index < audioURLs.count else { return }
-        let url = audioURLs[index]
-
-        do {
-            audioPlayer = try AVAudioPlayer(contentsOf: url)
-            audioPlayer?.delegate = self
-            audioPlayer?.play()
-            isPlaying = true
-            currentlyPlayingIndex = index
-            totalAudioDuration = audioPlayer?.duration ?? 0
-
-            // Start a timer to update current time
-            Timer.publish(every: 1, on: .main, in: .common)
-                .autoconnect()
-                .sink { [weak self] _ in
-                    self?.currentAudioTime = self?.audioPlayer?.currentTime ?? 0
-                }
-                .store(in: &cancellables)
-        } catch {
-            print("Error playing audio: \(error.localizedDescription)")
-        }
-    }
-
-    func stopAudio() {
-        audioPlayer?.stop()
-        isPlaying = false
-        cancellables.forEach { $0.cancel() }
-        cancellables.removeAll()
-        currentlyPlayingIndex = nil
-        currentAudioTime = 0
+        let urls = collectAudioFiles()
+        audioPlayers = urls.compactMap { try? SCKAudioPlayer(audioURL: $0) }
     }
 
     func removeAudio(at index: Int) {
-        guard index < audioURLs.count else { return }
+        guard index < audioPlayers.count else { return }
 
-        // Get the URL of the audio file to be removed
-        let audioURL = audioURLs[index]
-
-        // Remove the audio URL from the array
-        audioURLs.remove(at: index)
-
-        // Stop audio if it was playing
-        if currentlyPlayingIndex == index {
-            stopAudio()
-        } else if currentlyPlayingIndex != nil && index < currentlyPlayingIndex! {
-            // Adjust the currently playing index if necessary
-            currentlyPlayingIndex! -= 1
-        }
-
-        // Remove the audio file from the file system
         do {
-            try FileManager.default.removeItem(at: audioURL)
+            // Get the URL of the audio file to be removed
+            let audioPlayer = audioPlayers[index]
+            audioPlayer.stop()
+            // Remove the audio URL from the array
+            audioPlayers.remove(at: index)
+            // Remove file from directory
+            try FileManager.default.removeItem(at: audioPlayer.audioURL)
         } catch {
             print("Error removing audio file: \(error.localizedDescription)")
         }
@@ -175,21 +116,6 @@ final class SoundManager: NSObject, ObservableObject {
     }
 }
 
-extension SoundManager: SCKAudioManagerDelegate {
-    func audioManagerDidChangeRecordingState(_ audioManager: SCKAudioManager, state: SCKRecordingState) {
-        Task { @MainActor in isRecording = state == .recording }
-    }
-
-    func audioManagerDidChangePlaybackState(_ audioManager: SCKAudioManager, state: SCKPlaybackState) {
-        Task { @MainActor in isPlaying = state == .playing }
-    }
-
-    func audioManagerDidFinishRecording(_ audioManager: SCKAudioManager, at location: URL) {
-        avgPowers = []
-        prepare()
-    }
-}
-
 extension SoundManager: SCKRealTimeAudioRecorderDelegate {
     func audioRecorderDidChangeRecordingState(_ audioRecorder: SCKRealTimeAudioRecorder, state: SCKRecordingState) {
         isRecording = state == .recording
@@ -206,13 +132,5 @@ extension SoundManager: SCKRealTimeAudioRecorderDelegate {
 
     func audioRecorderDidUpdateTime(_ audioRecorder: SCKRealTimeAudioRecorder, time: String) {
         Task { @MainActor in self.recordingCurrentTime = time }
-    }
-}
-
-extension SoundManager: AVAudioPlayerDelegate {
-    func audioPlayerDidFinishPlaying(_ player: AVAudioPlayer, successfully flag: Bool) {
-        isPlaying = false
-        currentAudioTime = 0
-        currentlyPlayingIndex = nil
     }
 }

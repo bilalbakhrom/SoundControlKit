@@ -199,7 +199,7 @@ open class SCKAudioManager: SCKAudioRecorderManager, @unchecked Sendable {
         // Subscribe to the notification indicating the requirement
         // to stop a specific audio playback.
         NotificationCenter.default
-            .publisher(for: .soundControlKitRequiredToStopAudioPlayback)
+            .publisher(for: .stopAudioPlayback)
             .sink { [weak self] notification in
                 guard let self,
                       let url = notification.object as? URL,
@@ -214,7 +214,7 @@ open class SCKAudioManager: SCKAudioRecorderManager, @unchecked Sendable {
         // Subscribe to the notification indicating the requirement
         // to stop all playback.
         NotificationCenter.default
-            .publisher(for: .soundControlKitRequiredToStopAllAudioPlayback)
+            .publisher(for: .stopAllAudioPlayback)
             .sink { [weak self] _ in
                 self?.stopPlayback()
             }

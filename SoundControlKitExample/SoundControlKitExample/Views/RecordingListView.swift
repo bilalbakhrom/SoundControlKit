@@ -12,8 +12,8 @@ struct RecordingListView: View {
 
     var body: some View {
         List {
-            ForEach(Array(soundManager.audioURLs.enumerated()), id: \.element) { index, audioURL in
-                PlayerView(audioURL: audioURL, index: index)
+            ForEach(Array(soundManager.audioPlayers.enumerated()), id: \.element) { index, player in
+                PlayerView(player: player, index: index)
                     .swipeActions(edge: .trailing) {
                         Button(role: .destructive) {
                             soundManager.removeAudio(at: index)

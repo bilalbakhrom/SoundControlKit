@@ -253,7 +253,7 @@ open class SCKAudioRecorderManager: SCKAudioSessionManager, @unchecked Sendable 
         recorder?.deleteRecording()
         
         // Post a notification to stop playback if it's playing.
-        NotificationCenter.default.post(sckNotification: .soundControlKitRequiredToStopAllAudioPlayback)
+        NotificationCenter.default.post(sckNotification: .stopAllAudioPlayback)
     }
     
     func audioRecorderDidChangeState(_ state: SCKRecordingState) {}
