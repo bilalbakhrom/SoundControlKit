@@ -11,15 +11,13 @@ import Combine
 
 /// Manages audio recording functionality, including setup, configuration, and control.
 open class SCKAudioRecorderManager: SCKAudioSessionManager, @unchecked Sendable {
-    // MARK: - Properties
-    
-    /// Current state of audio recording.
-    private(set) var state: SCKRecordingState = .stopped {
-        didSet {
-            audioRecorderDidChangeState(state)
-        }
+    public weak var delegate: SCKAudioRecorderManagerDelegate?
+
+    /// The current state of the audio recording (stopped, recording, or paused).
+    private var recordingState: SCKRecordingState = .stopped {
+        didSet { triggerRecorderDidChangeState(recordingState) }
     }
-    
+
     /// Indicates whether stereo recording is supported.
     private var isStereoSupported: Bool = false {
         didSet {
@@ -32,31 +30,14 @@ open class SCKAudioRecorderManager: SCKAudioSessionManager, @unchecked Sendable 
     
     /// The file name option for the recording.
     private(set) var recordingDetails: RecordingDetails
-
-    /// The current time publisher subject for recording.
-    private let recordingCurrentTimeSubject = PassthroughSubject<String, Never>()
-    
-    private let recordingPowerSubject = PassthroughSubject<[Float], Never>()
     
     private var avgPowers: [Float] = []
     
     /// A cancellable timer for managing recording time (not currently used).
-    var timer: AnyCancellable?
-    
-    /// Publishes the current time for recording in the format: `mm:ss`.
-    public var recordingCurrentTimePublisher: AnyPublisher<String, Never> {
-        recordingCurrentTimeSubject.eraseToAnyPublisher()
-    }
-    
-    public var recordingPowerPublisher: AnyPublisher<[Float], Never> {
-        recordingPowerSubject.eraseToAnyPublisher()
-    }
-    
-    /// The URL where the recording is stored.
-    public var recordingURL: URL? {
-        let url = FileManager.default.urlInDocumentsDirectory(named: recordingDetails.fileName)
-        return FileManager.default.fileExists(atPath: url.path) ? url : nil
-    }
+    private var timer: AnyCancellable?
+
+    /// Holds separate locks for each method
+    private let locks = Array(repeating: NSLock(), count: 5)
     
     public var isRecordPremissionGranted: Bool {
         if #available(iOS 17.0, *) {
@@ -68,8 +49,13 @@ open class SCKAudioRecorderManager: SCKAudioSessionManager, @unchecked Sendable 
     
     // MARK: - Initialization
     
-    public init(fileName: SCKRecordingFileNameOption = .dateWithTime, format: SCKOutputFormat = .aac) {
+    public init(
+        fileName: SCKRecordingFileNameOption = .dateWithTime,
+        format: SCKOutputFormat = .aac,
+        delegate: SCKAudioRecorderManagerDelegate? = nil
+    ) {
         self.recordingDetails = RecordingDetails(option: fileName, format: format)
+        self.delegate = delegate
         super.init()
     }
 
@@ -108,6 +94,41 @@ open class SCKAudioRecorderManager: SCKAudioSessionManager, @unchecked Sendable 
             format: newFormat
         )
         try? configureRecorder()
+    }
+
+    // MARK: - Triggers
+
+    private func performDelegateCall(lockIndex: LockIndex, action: (SCKAudioRecorderManagerDelegate) -> Void) {
+        guard let delegate else { return }
+        let lock = locks[lockIndex.index]
+
+        lock.lock()
+        action(delegate)
+        lock.unlock()
+    }
+
+    private func triggerRecorderDidChangeState(_ recordingState: SCKRecordingState) {
+        performDelegateCall(lockIndex: .recordingState) { delegate in
+            delegate.recorderManagerDidChangeState(self, state: recordingState)
+        }
+    }
+
+    private func triggerRecorderDidFinish(_ audioFileURL: URL) {
+        performDelegateCall(lockIndex: .recordingEnd) { delegate in
+            delegate.recorderManagerDidFinishRecording(self, at: audioFileURL)
+        }
+    }
+
+    private func triggerRecorderDidUpdatePowerLevels(_ avgPowers: [Float]) {
+        performDelegateCall(lockIndex: .avgPower) { delegate in
+            delegate.recorderManagerDidUpdatePowerLevels(self, levels: avgPowers)
+        }
+    }
+
+    private func triggerRecorderDidUpdateTime(_ time: String) {
+        performDelegateCall(lockIndex: .recordingTime) { delegate in
+            delegate.recorderManagerDidUpdateTime(self, time: time)
+        }
     }
 
     // MARK: - Audio Recorder Setup
@@ -150,7 +171,7 @@ open class SCKAudioRecorderManager: SCKAudioSessionManager, @unchecked Sendable 
         interfaceOrientation: UIInterfaceOrientation
     ) async throws {
         // Don't update the data source if the app is currently recording.
-        guard state != .recording else { return }
+        guard recordingState != .recording else { return }
 
         // Get the shared audio session.
         let session = AVAudioSession.sharedInstance()
@@ -188,7 +209,7 @@ open class SCKAudioRecorderManager: SCKAudioSessionManager, @unchecked Sendable 
 
     /// Initiates the audio recording process.
     public func record() {
-        guard state != .recording && isRecordPremissionGranted else { return }
+        guard recordingState != .recording && isRecordPremissionGranted else { return }
         
         // Update session configuration for recording.
         try? configurePlayAndRecordAudioSession()
@@ -198,20 +219,20 @@ open class SCKAudioRecorderManager: SCKAudioSessionManager, @unchecked Sendable 
         
         // Begin audio recording and update the state to recording.
         recorder?.record()
-        state = .recording
+        recordingState = .recording
     }
     
     /// Initiates the audio recording process asynchronously.
     /// If not already recording, triggers a haptic vibration.
     public func record() async {
         // Do not initiate recording if the app is already recording.
-        guard state != .recording && isRecordPremissionGranted else { return }
+        guard recordingState != .recording && isRecordPremissionGranted else { return }
         
         // Update session configuration for recording.
         try? configurePlayAndRecordAudioSession()
 
         // If transitioning from a stopped state, provide a success feedback notification.
-        if state == .stopped {
+        if recordingState == .stopped {
             await sendFeedbackNotification()
         }
 
@@ -222,24 +243,24 @@ open class SCKAudioRecorderManager: SCKAudioSessionManager, @unchecked Sendable 
 
         // Begin audio recording and update the state to recording.
         recorder?.record()
-        state = .recording
+        recordingState = .recording
     }
 
     /// Pauses the audio recording process if currently recording.
     public func pauseRecording() {
         // Do not pause if the app is not currently recording.
-        guard state == .recording else { return }
+        guard recordingState == .recording else { return }
 
         // Pause the audio recorder and update the state to paused.
         recorder?.pause()
-        state = .paused
+        recordingState = .paused
     }
 
     
     /// Stops the audio recording process.
     public func stopRecording() {
         recorder?.stop()
-        state = .stopped
+        recordingState = .stopped
         avgPowers = []
         stopTimer()
     }
@@ -255,10 +276,6 @@ open class SCKAudioRecorderManager: SCKAudioSessionManager, @unchecked Sendable 
         // Post a notification to stop playback if it's playing.
         NotificationCenter.default.post(sckNotification: .stopAllAudioPlayback)
     }
-    
-    func audioRecorderDidChangeState(_ state: SCKRecordingState) {}
-    
-    func audioRecorderDidFinishRecording(_ recorder: AVAudioRecorder) {}
     
     // MARK: - Wave Controller
     
@@ -286,7 +303,7 @@ open class SCKAudioRecorderManager: SCKAudioSessionManager, @unchecked Sendable 
         // Update your wave view based on normalizedPower
         let value = round(avgPower * 10) / 10
         avgPowers.append(value)
-        recordingPowerSubject.send(avgPowers)
+        triggerRecorderDidUpdatePowerLevels(avgPowers)
     }
 
     // MARK: - Timer Methods
@@ -299,11 +316,11 @@ open class SCKAudioRecorderManager: SCKAudioSessionManager, @unchecked Sendable 
             .publish(every: 0.1, on: .main, in: .common)
             .autoconnect()
             .sink { [weak self] timer in
-                guard let self, let recorder, self.state == .recording else { return }
+                guard let self, let recorder, self.recordingState == .recording else { return }
 
                 // Format the current recording duration and send it to the publisher.
                 let timeInMinutesAndSeconds = self.formatTime(recorder.currentTime)
-                self.recordingCurrentTimeSubject.send(timeInMinutesAndSeconds)
+                triggerRecorderDidUpdateTime(timeInMinutesAndSeconds)
                 self.updateAveragePower()
             }
     }
@@ -354,8 +371,9 @@ extension SCKAudioRecorderManager: AVAudioRecorderDelegate {
         try? FileManager.default.removeItem(at: destURL)
         try? FileManager.default.moveItem(at: recorder.url, to: destURL)
         recorder.prepareToRecord()
+
         avgPowers = []
-        state = .stopped
-        audioRecorderDidFinishRecording(recorder)
+        recordingState = .stopped
+        triggerRecorderDidFinish(recorder.url)
     }
 }

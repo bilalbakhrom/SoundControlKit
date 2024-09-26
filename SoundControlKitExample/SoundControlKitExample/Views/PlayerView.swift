@@ -38,7 +38,10 @@ struct PlayerView: View {
             Spacer()
 
             Button {
-                NotificationCenter.default.post(sckNotification: .stopAllAudioPlayback)
+                if !player.isPlaying {
+                    NotificationCenter.default.post(sckNotification: .stopAllAudioPlayback)
+                }
+                
                 player.isPlaying ? player.stop() : player.play()
             } label: {
                 Image(systemName: player.isPlaying ? "stop.circle.fill" : "play.circle.fill")

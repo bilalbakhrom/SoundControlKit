@@ -30,16 +30,10 @@ public class SCKRealTimeAudioRecorder: SCKAudioSessionManager {
     private var startSampleTime: AVAudioFramePosition = 0
     /// The current state of the audio recording (stopped, recording, or paused).
     private var recordingState: SCKRecordingState = .stopped {
-        didSet { triggerRecordingState(recordingState) }
+        didSet { triggerRecorderDidChangeState(recordingState) }
     }
     /// Holds separate locks for each method
-    private let locks = [
-        NSLock(), // For recording state
-        NSLock(), // For recording end
-        NSLock(), // For recording buffer
-        NSLock(), // For average power
-        NSLock()  // For recording time
-    ]
+    private let locks = Array(repeating: NSLock(), count: 5)
 
     /// Checks if stereo is supported based on the current input node format.
     private var isStereoSupported: Bool {
@@ -104,7 +98,7 @@ extension SCKRealTimeAudioRecorder {
     private func handleAudioBuffer(_ buffer: AVAudioPCMBuffer, time: AVAudioTime) {
         do {
             // Notify delegate with real-time audio buffer data.
-            triggerRecordingBuffer(buffer)
+            triggerRecorderDidReceiveBuffer(buffer)
             // Calculate and send average power
             sendAveragePower(with: buffer)
             // Update and send current recording time using the AVAudioTime
@@ -127,33 +121,33 @@ extension SCKRealTimeAudioRecorder {
         lock.unlock()
     }
 
-    private func triggerRecordingState(_ recordingState: SCKRecordingState) {
+    private func triggerRecorderDidChangeState(_ recordingState: SCKRecordingState) {
         performDelegateCall(lockIndex: .recordingState) { delegate in
-            delegate.audioRecorderDidChangeRecordingState(self, state: recordingState)
+            delegate.recorderDidChangeState(self, state: recordingState)
         }
     }
 
-    private func triggerRecordingEnd(_ audioFileURL: URL) {
+    private func triggerRecorderDidFinish(_ audioFileURL: URL) {
         performDelegateCall(lockIndex: .recordingEnd) { delegate in
-            delegate.audioRecorderDidFinishRecording(self, at: audioFileURL)
+            delegate.recorderDidFinish(self, at: audioFileURL)
         }
     }
 
-    private func triggerRecordingBuffer(_ buffer: AVAudioPCMBuffer) {
+    private func triggerRecorderDidReceiveBuffer(_ buffer: AVAudioPCMBuffer) {
         performDelegateCall(lockIndex: .recordingBuffer) { delegate in
-            delegate.audioRecorderDidReceiveRealTimeAudioBuffer(self, buffer: buffer)
+            delegate.recorderDidReceiveBuffer(self, buffer: buffer)
         }
     }
 
-    private func triggerAvgPower(_ avgPowers: [Float]) {
+    private func triggerRecorderDidUpdatePowerLevels(_ avgPowers: [Float]) {
         performDelegateCall(lockIndex: .avgPower) { delegate in
-            delegate.audioRecorderDidUpdateAveragePower(self, avgPowers: avgPowers)
+            delegate.recorderDidUpdatePowerLevels(self, levels: avgPowers)
         }
     }
 
-    private func triggerRecordingTime(_ time: String) {
+    private func triggerRecorderDidUpdateTime(_ time: String) {
         performDelegateCall(lockIndex: .recordingTime) { delegate in
-            delegate.audioRecorderDidUpdateTime(self, time: time)
+            delegate.recorderDidUpdateTime(self, time: time)
         }
     }
 
@@ -172,7 +166,7 @@ extension SCKRealTimeAudioRecorder {
 
         let power = scaledPower(rms: rms)
         avgPowers.append(power)
-        triggerAvgPower(avgPowers)
+        triggerRecorderDidUpdatePowerLevels(avgPowers)
     }
 
     private func scaledPower(rms: Float) -> Float {
@@ -202,7 +196,7 @@ extension SCKRealTimeAudioRecorder {
         let seconds = Int(timeInSeconds) % 60
         let formattedTime = String(format: "%02d:%02d", minutes, seconds)
         // Send the formatted time
-        triggerRecordingTime(formattedTime)
+        triggerRecorderDidUpdateTime(formattedTime)
     }
 
     private func playRecordingStartSound() {
@@ -259,7 +253,7 @@ extension SCKRealTimeAudioRecorder {
 
         // Notify delegate with the file URL where the audio is saved.
         if let audioFileURL = audioFile?.url {
-            triggerRecordingEnd(audioFileURL)
+            triggerRecorderDidFinish(audioFileURL)
         }
     }
 
@@ -343,18 +337,16 @@ extension SCKRealTimeAudioRecorder {
     }
 }
 
-extension SCKRealTimeAudioRecorder {
-    private enum LockIndex {
-        case recordingState, recordingEnd, recordingBuffer, avgPower, recordingTime
+enum LockIndex {
+    case recordingState, recordingEnd, recordingBuffer, avgPower, recordingTime
 
-        var index: Int {
-            switch self {
-            case .recordingState: return 0
-            case .recordingEnd: return 1
-            case .recordingBuffer: return 2
-            case .avgPower: return 3
-            case .recordingTime: return 4
-            }
+    var index: Int {
+        switch self {
+        case .recordingState: return 0
+        case .recordingEnd: return 1
+        case .recordingBuffer: return 2
+        case .avgPower: return 3
+        case .recordingTime: return 4
         }
     }
 }
