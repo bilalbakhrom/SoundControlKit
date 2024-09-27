@@ -53,6 +53,8 @@ public class SCKRealTimeAudioRecorder: SCKAudioSessionManager {
         recordingState != .recording && isRecordPremissionGranted
     }
 
+    private var cachedFileURL: URL?
+
     private var audioSettings: [String: Any] {
         [
             AVFormatIDKey: Int(recordingDetails.format.audioFormatID),
@@ -65,8 +67,14 @@ public class SCKRealTimeAudioRecorder: SCKAudioSessionManager {
     }
 
     private var fileURL: URL {
+        if let cachedFileURL {
+            return cachedFileURL
+        }
+
         let tempDir = FileManager.default.temporaryDirectory
-        return tempDir.appendingPathComponent(recordingDetails.fileName)
+        let fileURL = tempDir.appendingPathComponent(recordingDetails.fileName)
+        cachedFileURL = fileURL
+        return fileURL
     }
 
     // MARK: - Initialization
@@ -76,7 +84,11 @@ public class SCKRealTimeAudioRecorder: SCKAudioSessionManager {
     /// - Parameters:
     ///   - fileName: The naming convention for the output file (default is date).
     ///   - outputFormat: The format for the audio recording (default is AAC).
-    public init(fileName: SCKRecordingFileNameOption = .date, outputFormat: SCKOutputFormat = .aac, delegate: SCKRealTimeAudioRecorderDelegate? = nil) {
+    public init(
+        fileName: SCKRecordingFileNameOption = .date,
+        outputFormat: SCKOutputFormat = .aac,
+        delegate: SCKRealTimeAudioRecorderDelegate? = nil
+    ) {
         self.recordingDetails = RecordingDetails(option: fileName, format: outputFormat)
         self.engine = AVAudioEngine()
         self.mixerNode = AVAudioMixerNode()
@@ -87,31 +99,29 @@ public class SCKRealTimeAudioRecorder: SCKAudioSessionManager {
     }
 }
 
-extension SCKRealTimeAudioRecorder {
-    // MARK: - Actions
+// MARK: - Actions
 
+extension SCKRealTimeAudioRecorder {
     /// Handles the real-time audio buffer by writing to the audio file and notifying the delegate.
     ///
     /// - Parameters:
     ///   - buffer: The audio buffer to be processed.
     ///   - time: The AVAudioTime associated with the buffer.
     private func handleAudioBuffer(_ buffer: AVAudioPCMBuffer, time: AVAudioTime) {
-        do {
-            // Notify delegate with real-time audio buffer data.
-            triggerRecorderDidReceiveBuffer(buffer)
-            // Calculate and send average power
-            sendAveragePower(with: buffer)
-            // Update and send current recording time using the AVAudioTime
-            sendCurrentRecordingTime(with: time)
-            // Write the buffer to the audio file.
-            try audioFile?.write(from: buffer)
-        } catch {
-            print("Error writing audio buffer: \(error)")
-        }
+        // Calculate and send average power
+        sendAveragePower(with: buffer)
+        // Update and send current recording time using the AVAudioTime
+        sendCurrentRecordingTime(with: time)
+        // Write the buffer to the audio file.
+        try? audioFile?.write(from: buffer)
+        // Notify delegate with real-time audio buffer data.
+        triggerRecorderDidReceiveBuffer(buffer, recordingLocation: fileURL)
     }
+}
 
-    // MARK: - Triggers
+// MARK: - Triggers
 
+extension SCKRealTimeAudioRecorder {
     private func performDelegateCall(lockIndex: LockIndex, action: (SCKRealTimeAudioRecorderDelegate) -> Void) {
         guard let delegate else { return }
         let lock = locks[lockIndex.index]
@@ -133,9 +143,9 @@ extension SCKRealTimeAudioRecorder {
         }
     }
 
-    private func triggerRecorderDidReceiveBuffer(_ buffer: AVAudioPCMBuffer) {
+    private func triggerRecorderDidReceiveBuffer(_ buffer: AVAudioPCMBuffer, recordingLocation: URL) {
         performDelegateCall(lockIndex: .recordingBuffer) { delegate in
-            delegate.recorderDidReceiveBuffer(self, buffer: buffer)
+            delegate.recorderDidReceiveBuffer(self, buffer: buffer, recordingLocation: recordingLocation)
         }
     }
 
@@ -246,10 +256,11 @@ extension SCKRealTimeAudioRecorder {
         inputNode.removeTap(onBus: 0)
         mixerNode.removeTap(onBus: 0)
         engine.reset()
+        playRecordingStopSound()
         recordingState = .stopped
         avgPowers = []
         startSampleTime = 0
-        playRecordingStopSound()
+        cachedFileURL = nil
 
         // Notify delegate with the file URL where the audio is saved.
         if let audioFileURL = audioFile?.url {
@@ -262,7 +273,6 @@ extension SCKRealTimeAudioRecorder {
         stop()
     }
 }
-
 
 // MARK: - Configuration
 
@@ -334,19 +344,5 @@ extension SCKRealTimeAudioRecorder {
                 handleAudioBuffer(buffer, time: time)
             }
         )
-    }
-}
-
-enum LockIndex {
-    case recordingState, recordingEnd, recordingBuffer, avgPower, recordingTime
-
-    var index: Int {
-        switch self {
-        case .recordingState: return 0
-        case .recordingEnd: return 1
-        case .recordingBuffer: return 2
-        case .avgPower: return 3
-        case .recordingTime: return 4
-        }
     }
 }

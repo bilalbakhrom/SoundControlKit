@@ -133,4 +133,8 @@ extension SoundManager: SCKRealTimeAudioRecorderDelegate {
     func recorderDidUpdatePowerLevels(_ recorder: SCKRealTimeAudioRecorder, levels: [Float]) {
         Task { @MainActor in self.avgPowers = levels.reversed() }
     }
+
+    func recorderDidReceiveBuffer(_ recorder: SCKRealTimeAudioRecorder, buffer: AVAudioPCMBuffer, recordingLocation location: URL) {
+        // You can implement your logic here with buffer and audio url.
+    }
 }

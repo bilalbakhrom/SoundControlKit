@@ -16,7 +16,7 @@ public protocol SCKRealTimeAudioRecorderDelegate: AnyObject {
     func recorderDidFinish(_ recorder: SCKRealTimeAudioRecorder, at location: URL)
 
     // Triggered when real-time audio buffers are received during recording
-    func recorderDidReceiveBuffer(_ recorder: SCKRealTimeAudioRecorder, buffer: AVAudioPCMBuffer)
+    func recorderDidReceiveBuffer(_ recorder: SCKRealTimeAudioRecorder, buffer: AVAudioPCMBuffer, recordingLocation location: URL)
 
     // Triggered when average power levels are updated during recording
     func recorderDidUpdatePowerLevels(_ recorder: SCKRealTimeAudioRecorder, levels: [Float])
