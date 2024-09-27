@@ -223,49 +223,59 @@ extension SCKRealTimeAudioRecorder {
 // MARK: - Recording Control
 
 extension SCKRealTimeAudioRecorder {
+    public func prepare() {
+        configure()
+    }
+
     /// Initiates the audio recording process asynchronously with proper session configuration.
     ///
-    /// This method checks if recording is already in progress and ensures that recording permission
-    /// has been granted. If the state is `.stopped`, it will provide haptic feedback, configure the
-    /// audio session for recording, and start the audio engine to begin recording.
-    ///
     /// - Throws: `SCKAudioRecorderError` if the audio session configuration or audio engine fails.
+    @MainActor
     public func start() throws {
         guard canStartRecording else { return }
 
-        // Start recording and update the state to recording.
-        do {
-            // Provide haptic feedback if starting from the stopped state.
-            if recordingState == .stopped {
-                playRecordingStartSound()
+        Task { @MainActor in
+            do {
+                try await startEngine()
+            } catch {
+                stop()
+                throw SCKAudioRecorderError.engineStartFailure(error)
             }
-
-            configure()
-            try engine.start()
-            setupRealTimeAudioOutput()
-            recordingState = .recording
-        } catch {
-            throw SCKAudioRecorderError.engineStartFailure(error)
         }
     }
 
     /// Stops the recording process and saves the recorded file.
     public func stop() {
+        recordingState = .stopped
         engine.stop()
-        engine.disconnectNodeInput(inputNode)
+        engine.reset()
         inputNode.removeTap(onBus: 0)
         mixerNode.removeTap(onBus: 0)
-        engine.reset()
         playRecordingStopSound()
-        recordingState = .stopped
         avgPowers = []
-        startSampleTime = 0
         cachedFileURL = nil
+        startSampleTime = 0
 
         // Notify delegate with the file URL where the audio is saved.
         if let audioFileURL = audioFile?.url {
             triggerRecorderDidFinish(audioFileURL)
         }
+    }
+
+    @MainActor
+    private func startEngine() async throws {
+        if recordingState == .stopped {
+            startSampleTime = 0
+            playRecordingStartSound()
+            // Start recording
+            recordingState = .recording
+            // Wait 0.5 seconds before starting engine.
+            try? await Task.sleep(nanoseconds: 300_000_000)
+        }
+
+        configureEngine()
+        try engine.start()
+        try setupRealTimeAudioOutput()
     }
 
     private func stopRecordingIfNeeded() {
@@ -283,7 +293,6 @@ extension SCKRealTimeAudioRecorder {
     public func setFileName(_ option: SCKRecordingFileNameOption) {
         stopRecordingIfNeeded()
         recordingDetails = RecordingDetails(option: option, format: recordingDetails.format)
-        configure()
     }
 
     /// Updates the output format for the recording and reconfigures the audio engine.
@@ -292,15 +301,12 @@ extension SCKRealTimeAudioRecorder {
     public func setOutputFormat(_ newFormat: SCKOutputFormat) {
         stopRecordingIfNeeded()
         recordingDetails = RecordingDetails(option: recordingDetails.option, format: newFormat)
-        configure()
     }
 
     /// Configures the audio engine by setting up the audio file and real-time audio output.
     public func configure() {
         do {
-            try configurePlayAndRecordAudioSession()
-            try setupAudio()
-            configureEngine()
+            try configurePlayAndRecordAudioSession(mode: .voiceChat)
         } catch {
             print("Error configuring audio engine: \(error)")
         }
@@ -309,6 +315,7 @@ extension SCKRealTimeAudioRecorder {
     /// Sets up the audio engine, including the equalizer, reverb, and audio connections.
     private func configureEngine() {
         mixerNode.volume = 0
+        inputNode.isVoiceProcessingAGCEnabled = true
         // Attach nodes
         engine.attach(mixerNode)
         // Connect input node to mixer
@@ -325,14 +332,17 @@ extension SCKRealTimeAudioRecorder {
     }
 
     /// Installs a tap on the input node to capture real-time audio buffers during recording.
-    private func setupRealTimeAudioOutput() {
+    private func setupRealTimeAudioOutput() throws {
         guard engine.isRunning else { return }
 
+        // Initialize audio file.
+        try setupAudio()
+        // Get input format.
         let inputFormat = inputNode.outputFormat(forBus: 0)
         // Ensure that the engine is running before installing the tap
         inputNode.installTap(
             onBus: 0,
-            bufferSize: 1024,
+            bufferSize: 2048,
             format: inputFormat,
             block: { [weak self] (buffer, time) in
                 guard let self else { return }

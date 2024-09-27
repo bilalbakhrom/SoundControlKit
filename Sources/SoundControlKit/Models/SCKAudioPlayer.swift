@@ -64,10 +64,10 @@ final public class SCKAudioPlayer: NSObject, ObservableObject {
         player?.prepareToPlay()
 
         // Configure audio session.
-        let session = AVAudioSession.sharedInstance()
-        try session.setCategory(.playback, mode: .default)
-        try session.overrideOutputAudioPort(.speaker)
-        try session.setActive(true)
+//        let session = AVAudioSession.sharedInstance()
+//        try session.setCategory(.playback, mode: .default)
+//        try session.overrideOutputAudioPort(.speaker)
+//        try session.setActive(true)
     }
 
     /// Starts a timer to track the progress and duration of the audio playback.

@@ -36,9 +36,11 @@ final class SoundManager: NSObject, ObservableObject {
     }
 
     func prepare() {
+        realTimeRecorder.configure()
         loadAudioFiles()
     }
 
+    @MainActor
     func recordAndStop() {
         guard isRecordPremissionGranted else {
             askRecordingPermission()
@@ -118,8 +120,11 @@ final class SoundManager: NSObject, ObservableObject {
 
 extension SoundManager: SCKRealTimeAudioRecorderDelegate {
     func recorderDidFinish(_ recorder: SCKRealTimeAudioRecorder, at location: URL) {
-        avgPowers = []
-        prepare()
+        Task { @MainActor in
+            avgPowers = []
+            recordingCurrentTime = "00:00"
+            prepare()
+        }
     }
 
     func recorderDidUpdateTime(_ recorder: SCKRealTimeAudioRecorder, time: String) {
@@ -127,7 +132,7 @@ extension SoundManager: SCKRealTimeAudioRecorderDelegate {
     }
 
     func recorderDidChangeState(_ recorder: SCKRealTimeAudioRecorder, state: SCKRecordingState) {
-        isRecording = state == .recording
+        Task { @MainActor in isRecording = state == .recording }
     }
 
     func recorderDidUpdatePowerLevels(_ recorder: SCKRealTimeAudioRecorder, levels: [Float]) {
