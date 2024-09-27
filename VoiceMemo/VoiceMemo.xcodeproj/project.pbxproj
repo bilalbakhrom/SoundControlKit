@@ -3,7 +3,7 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 60;
+	objectVersion = 77;
 	objects = {
 
 /* Begin PBXBuildFile section */
@@ -33,7 +33,7 @@
 		D5198EBE2CA5AD910045FD05 /* View+CornerRadius.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "View+CornerRadius.swift"; sourceTree = "<group>"; };
 		D5198EC12CA5AED80045FD05 /* PlayerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlayerView.swift; sourceTree = "<group>"; };
 		D5198EC32CA5B04B0045FD05 /* RecordingControllerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecordingControllerView.swift; sourceTree = "<group>"; };
-		D56DA56B2B0A779E006CE22B /* SoundControlKitExample.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = SoundControlKitExample.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		D56DA56B2B0A779E006CE22B /* VoiceMemo.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = VoiceMemo.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		D56DA56E2B0A779E006CE22B /* SoundControlKitExampleApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SoundControlKitExampleApp.swift; sourceTree = "<group>"; };
 		D56DA5722B0A77A0006CE22B /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		D56DA5752B0A77A0006CE22B /* Preview Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = "Preview Assets.xcassets"; sourceTree = "<group>"; };
@@ -66,7 +66,7 @@
 		D56DA5622B0A779E006CE22B = {
 			isa = PBXGroup;
 			children = (
-				D56DA56D2B0A779E006CE22B /* SoundControlKitExample */,
+				D56DA56D2B0A779E006CE22B /* VoiceMemo */,
 				D56DA56C2B0A779E006CE22B /* Products */,
 			);
 			sourceTree = "<group>";
@@ -74,12 +74,12 @@
 		D56DA56C2B0A779E006CE22B /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				D56DA56B2B0A779E006CE22B /* SoundControlKitExample.app */,
+				D56DA56B2B0A779E006CE22B /* VoiceMemo.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
 		};
-		D56DA56D2B0A779E006CE22B /* SoundControlKitExample */ = {
+		D56DA56D2B0A779E006CE22B /* VoiceMemo */ = {
 			isa = PBXGroup;
 			children = (
 				D5198EBF2CA5AD910045FD05 /* Extensions */,
@@ -89,7 +89,7 @@
 				D56DA58E2B0A78E8006CE22B /* Resources */,
 				D56DA5742B0A77A0006CE22B /* Preview Content */,
 			);
-			path = SoundControlKitExample;
+			path = VoiceMemo;
 			sourceTree = "<group>";
 		};
 		D56DA5742B0A77A0006CE22B /* Preview Content */ = {
@@ -142,9 +142,9 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		D56DA56A2B0A779E006CE22B /* SoundControlKitExample */ = {
+		D56DA56A2B0A779E006CE22B /* VoiceMemo */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = D56DA5792B0A77A0006CE22B /* Build configuration list for PBXNativeTarget "SoundControlKitExample" */;
+			buildConfigurationList = D56DA5792B0A77A0006CE22B /* Build configuration list for PBXNativeTarget "VoiceMemo" */;
 			buildPhases = (
 				D56DA5672B0A779E006CE22B /* Sources */,
 				D56DA5682B0A779E006CE22B /* Frameworks */,
@@ -154,12 +154,12 @@
 			);
 			dependencies = (
 			);
-			name = SoundControlKitExample;
+			name = VoiceMemo;
 			packageProductDependencies = (
 				D51476962CA3F7E0002C9035 /* SoundControlKit */,
 			);
 			productName = SoundControlKitExample;
-			productReference = D56DA56B2B0A779E006CE22B /* SoundControlKitExample.app */;
+			productReference = D56DA56B2B0A779E006CE22B /* VoiceMemo.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
@@ -177,8 +177,7 @@
 					};
 				};
 			};
-			buildConfigurationList = D56DA5662B0A779E006CE22B /* Build configuration list for PBXProject "SoundControlKitExample" */;
-			compatibilityVersion = "Xcode 14.0";
+			buildConfigurationList = D56DA5662B0A779E006CE22B /* Build configuration list for PBXProject "VoiceMemo" */;
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
 			knownRegions = (
@@ -189,11 +188,12 @@
 			packageReferences = (
 				D51476952CA3F7E0002C9035 /* XCLocalSwiftPackageReference "../../SoundControlKit" */,
 			);
+			preferredProjectObjectVersion = 77;
 			productRefGroup = D56DA56C2B0A779E006CE22B /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				D56DA56A2B0A779E006CE22B /* SoundControlKitExample */,
+				D56DA56A2B0A779E006CE22B /* VoiceMemo */,
 			);
 		};
 /* End PBXProject section */
@@ -359,29 +359,31 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_ASSET_PATHS = "\"SoundControlKitExample/Preview Content\"";
+				DEVELOPMENT_ASSET_PATHS = "\"VoiceMemo/Preview Content\"";
 				DEVELOPMENT_TEAM = DNW46HQPWS;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_CFBundleDisplayName = "Voice Memos";
+				INFOPLIST_KEY_CFBundleDisplayName = "Demo VoiceMemo";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.lifestyle";
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "We need access to your microphone to enable experts to send audio messages and participate in video calls, providing a richer and more interactive support experience.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
 				IPHONEOS_DEPLOYMENT_TARGET = 15.6;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.0;
+				MARKETING_VERSION = 1.0.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.sck.SoundControlKitExample;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
+				TARGETED_DEVICE_FAMILY = 1;
 			};
 			name = Debug;
 		};
@@ -392,36 +394,38 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_ASSET_PATHS = "\"SoundControlKitExample/Preview Content\"";
+				DEVELOPMENT_ASSET_PATHS = "\"VoiceMemo/Preview Content\"";
 				DEVELOPMENT_TEAM = DNW46HQPWS;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_CFBundleDisplayName = "Voice Memos";
+				INFOPLIST_KEY_CFBundleDisplayName = "Demo VoiceMemo";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.lifestyle";
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "We need access to your microphone to enable experts to send audio messages and participate in video calls, providing a richer and more interactive support experience.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
 				IPHONEOS_DEPLOYMENT_TARGET = 15.6;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.0;
+				MARKETING_VERSION = 1.0.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.sck.SoundControlKitExample;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
+				TARGETED_DEVICE_FAMILY = 1;
 			};
 			name = Release;
 		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		D56DA5662B0A779E006CE22B /* Build configuration list for PBXProject "SoundControlKitExample" */ = {
+		D56DA5662B0A779E006CE22B /* Build configuration list for PBXProject "VoiceMemo" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				D56DA5772B0A77A0006CE22B /* Debug */,
@@ -430,7 +434,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		D56DA5792B0A77A0006CE22B /* Build configuration list for PBXNativeTarget "SoundControlKitExample" */ = {
+		D56DA5792B0A77A0006CE22B /* Build configuration list for PBXNativeTarget "VoiceMemo" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				D56DA57A2B0A77A0006CE22B /* Debug */,
