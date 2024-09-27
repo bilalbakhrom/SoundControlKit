@@ -102,7 +102,7 @@ Additionally, it supports various output formats including:
 
 ### Example
 
-Explore the [sample project](https://github.com/bilalBakhrom/SoundControlKit/tree/master/SoundControlKitExample) that demonstrates how to use SoundControlKit.
+Explore the [demo project - Voice Memo](https://github.com/bilalbakhrom/SoundControlKit/tree/main/VoiceMemo) that demonstrates how to use SoundControlKit.
 
 ## License
 
