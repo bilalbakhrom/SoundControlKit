@@ -9,42 +9,24 @@ import Foundation
 import AVFoundation
 
 /// Manages audio sessions and provides functionality for configuration and microphone selection.
-open class SCKAudioSessionManager: NSObject {    
+open class SCKAudioSessionManager: @unchecked Sendable {
     /// Configures the audio session for recording and playback.
     ///
     /// - Throws: An `AudioSessionError` if the configuration fails.
-    public func configurePlayAndRecordAudioSession() throws {
+    public func configurePlayAndRecordAudioSession(mode: AVAudioSession.Mode = .default) throws {
         do {
             let audioSession = AVAudioSession.sharedInstance()
-            
             // Set the audio session category to play and record, allowing default to speaker and Bluetooth.
             try audioSession.setCategory(
                 .playAndRecord,
-                mode: .default,
+                mode: mode,
                 options: [.defaultToSpeaker, .allowBluetooth]
             )
-
             // Activate the audio session.
             try audioSession.setActive(true)
+            try enableBuiltInMicrophone()
         } catch {
             // If an error occurs during configuration, throw an appropriate error.
-            throw AudioSessionError.configurationFailed
-        }
-    }
-    
-    /// Configures the audio session for playing recorded music or other sounds
-    ///
-    /// - Throws: An `AudioSessionError` if the configuration fails.
-    public func configurePlaybackAudioSession() throws {
-        do {
-            let audioSession = AVAudioSession.sharedInstance()
-            
-            // Set the audio session category to playback.
-            try audioSession.setCategory(.playback, mode: .default)
-            
-            // Activate the audio session.
-            try audioSession.setActive(true)
-        } catch {
             throw AudioSessionError.configurationFailed
         }
     }
