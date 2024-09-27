@@ -57,7 +57,7 @@ realTimeRecorder.stop()
 
 ```swift
 // Create an instance of `SCKAudioPlayer`.
-let audioPlayer = SCKAudioPlayer(delegate: self)
+let audioPlayer = SCKAudioPlayer(audioURL: recordingURL)
 
 // Play the recorded audio.
 audioPlayer.play()
