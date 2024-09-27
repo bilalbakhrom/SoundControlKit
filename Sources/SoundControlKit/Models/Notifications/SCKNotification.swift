@@ -11,8 +11,8 @@ public typealias NotificationOutput = NotificationCenter.Publisher.Output
 public typealias NotificationCompletion = (NotificationOutput) -> Void
 
 public enum SCKNotification: String, SCKNotificationName {
-    case soundControlKitRequiredToStopAudioPlayback
-    case soundControlKitRequiredToStopAllAudioPlayback
+    case stopAudioPlayback
+    case stopAllAudioPlayback
     
     public var key: String {
         self.rawValue

@@ -9,24 +9,24 @@ import Foundation
 import AVFoundation
 
 public protocol SCKRealTimeAudioRecorderDelegate: AnyObject {
-    /// Called when the recording state changes.
-    func audioRecorderDidChangeRecordingState(_ audioRecorder: SCKRealTimeAudioRecorder, state: SCKRecordingState)
+    // Triggered when the recording state changes (e.g., started or stopped)
+    func recorderDidChangeState(_ recorder: SCKRealTimeAudioRecorder, state: SCKRecordingState)
 
-    /// Called when the recording is finished.
-    func audioRecorderDidFinishRecording(_ audioRecorder: SCKRealTimeAudioRecorder, at location: URL)
+    // Triggered when the recording finishes, providing the location of the saved file
+    func recorderDidFinish(_ recorder: SCKRealTimeAudioRecorder, at location: URL)
 
-    /// Called with real-time audio buffers for processing.
-    func audioRecorderDidReceiveRealTimeAudioBuffer(_ audioRecorder: SCKRealTimeAudioRecorder, buffer: AVAudioPCMBuffer)
+    // Triggered when real-time audio buffers are received during recording
+    func recorderDidReceiveBuffer(_ recorder: SCKRealTimeAudioRecorder, buffer: AVAudioPCMBuffer, recordingLocation location: URL)
 
-    func audioRecorderDidUpdateAveragePower(_ audioRecorder: SCKRealTimeAudioRecorder, avgPowers: [Float])
-    
-    func audioRecorderDidUpdateTime(_ audioRecorder: SCKRealTimeAudioRecorder, time: String)
+    // Triggered when average power levels are updated during recording
+    func recorderDidUpdatePowerLevels(_ recorder: SCKRealTimeAudioRecorder, levels: [Float])
+
+    // Triggered when the recording time is updated
+    func recorderDidUpdateTime(_ recorder: SCKRealTimeAudioRecorder, time: String)
 }
 
 extension SCKRealTimeAudioRecorderDelegate {
-    public func audioRecorderDidReceiveRealTimeAudioBuffer(_ audioRecorder: SCKRealTimeAudioRecorder, buffer: AVAudioPCMBuffer) {}
-
-    public func audioRecorderDidUpdateAveragePower(_ audioRecorder: SCKRealTimeAudioRecorder, avgPowers: [Float]) {}
-
-    public func audioRecorderDidUpdateTime(_ audioRecorder: SCKRealTimeAudioRecorder, time: String) {}
+    public func recorderDidReceiveBuffer(_ recorder: SCKRealTimeAudioRecorder, buffer: AVAudioPCMBuffer) {}
+    public func recorderDidUpdatePowerLevels(_ recorder: SCKRealTimeAudioRecorder, levels: [Float]) {}
+    public func recorderDidUpdateTime(_ recorder: SCKRealTimeAudioRecorder, time: String) {}
 }
