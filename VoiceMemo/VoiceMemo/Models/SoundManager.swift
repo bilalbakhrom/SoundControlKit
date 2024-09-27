@@ -33,34 +33,29 @@ final class SoundManager: NSObject, ObservableObject {
         super.init()
     }
 
-    private func loadAudioFiles() {
-        Task { @MainActor in
-            let urls = await self.collectAudioFiles()
-            audioPlayers = urls.map(SCKAudioPlayer.init)
-            audioPlayers.forEach { try? $0.configure() }
-            closeAll()
-        }
+    @MainActor
+    private func loadAudioFiles() async {
+        let urls = await self.collectAudioFiles()
+        audioPlayers = urls.map(SCKAudioPlayer.init)
+        audioPlayers.forEach { try? $0.configure() }
+        closeAll()
     }
 
     private func collectAudioFiles() async -> [URL] {
-        return await withCheckedContinuation { continuation in
-            DispatchQueue.global(qos: .userInitiated).async {
-                let fileManager = FileManager.default
-                let temporaryDirectory = fileManager.temporaryDirectory
-                let audioExtensions = SCKOutputFormat.supportedFormats
+        let fileManager = FileManager.default
+        let temporaryDirectory = fileManager.temporaryDirectory
+        let audioExtensions = SCKOutputFormat.supportedFormats
 
-                do {
-                    let allFiles = try fileManager.contentsOfDirectory(at: temporaryDirectory, includingPropertiesForKeys: nil)
-                    let audioFiles = allFiles.filter { url in
-                        audioExtensions.contains(url.pathExtension.lowercased())
-                    }
-
-                    continuation.resume(returning: audioFiles)
-                } catch {
-                    print("Error while fetching audio files: \(error.localizedDescription)")
-                    continuation.resume(returning: [])
-                }
+        do {
+            let allFiles = try fileManager.contentsOfDirectory(at: temporaryDirectory, includingPropertiesForKeys: nil)
+            let audioFiles = allFiles.filter { url in
+                audioExtensions.contains(url.pathExtension.lowercased())
             }
+
+            return audioFiles
+        } catch {
+            print("Error while fetching audio files: \(error.localizedDescription)")
+            return []
         }
     }
 }
@@ -73,9 +68,9 @@ extension SoundManager {
             return
         }
 
-        realTimeRecorder.configure()
+        realTimeRecorder.prepare()
         realTimeRecorder.delegate = self
-        loadAudioFiles()
+        Task { await loadAudioFiles() }
     }
 
     func setPlaybackSession() {

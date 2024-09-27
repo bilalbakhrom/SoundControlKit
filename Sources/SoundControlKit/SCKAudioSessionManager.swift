@@ -24,51 +24,9 @@ open class SCKAudioSessionManager: @unchecked Sendable {
             )
             // Activate the audio session.
             try audioSession.setActive(true)
+            try enableBuiltInMicrophone()
         } catch {
             // If an error occurs during configuration, throw an appropriate error.
-            throw AudioSessionError.configurationFailed
-        }
-    }
-
-    public func configurePlayAndRecordAudioSession(mode: AVAudioSession.Mode = .default) async throws {
-        let audioSession = AVAudioSession.sharedInstance()
-
-        do {
-            // Set category on the main thread (usually quicker)
-            try audioSession.setCategory(
-                .playAndRecord,
-                mode: mode,
-                options: [.defaultToSpeaker, .allowBluetooth]
-            )
-            // Activate session on background thread
-            try await withCheckedThrowingContinuation { continuation in
-                DispatchQueue.global(qos: .userInitiated).async {
-                    do {
-                        try audioSession.setActive(true)
-                        continuation.resume()
-                    } catch {
-                        continuation.resume(throwing: AudioSessionError.configurationFailed)
-                    }
-                }
-            }
-        } catch {
-            throw AudioSessionError.configurationFailed
-        }
-    }
-
-    /// Configures the audio session for playing recorded music or other sounds
-    ///
-    /// - Throws: An `AudioSessionError` if the configuration fails.
-    public func configurePlaybackAudioSession() throws {
-        do {
-            let audioSession = AVAudioSession.sharedInstance()
-            
-            // Set the audio session category to playback.
-            try audioSession.setCategory(.playback, mode: .default)
-            
-            // Activate the audio session.
-            try audioSession.setActive(true)
-        } catch {
             throw AudioSessionError.configurationFailed
         }
     }

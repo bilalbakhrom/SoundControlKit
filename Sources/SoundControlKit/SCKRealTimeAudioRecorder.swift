@@ -217,7 +217,6 @@ extension SCKRealTimeAudioRecorder {
 // MARK: - Recording Control
 
 extension SCKRealTimeAudioRecorder {
-    @MainActor
     public func prepare() {
         configure()
     }
@@ -283,14 +282,11 @@ extension SCKRealTimeAudioRecorder {
 
 extension SCKRealTimeAudioRecorder {
     /// Configures the audio engine by setting up the audio file and real-time audio output.
-    @MainActor
-    public func configure() {
-        Task {
-            do {
-                try await configurePlayAndRecordAudioSession(mode: .voiceChat)
-            } catch {
-                print("Error configuring audio engine: \(error)")
-            }
+    private func configure() {
+        do {
+            try configurePlayAndRecordAudioSession(mode: .voiceChat)
+        } catch {
+            print("Error configuring audio engine: \(error)")
         }
     }
 
