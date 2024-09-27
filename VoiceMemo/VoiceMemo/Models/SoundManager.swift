@@ -31,7 +31,7 @@ final class SoundManager: NSObject, ObservableObject {
     override init() {
         realTimeRecorder = SCKRealTimeAudioRecorder(fileName: .dateWithTime, outputFormat: .aac)
         super.init()
-    }    
+    }
 
     private func loadAudioFiles() {
         Task { @MainActor in

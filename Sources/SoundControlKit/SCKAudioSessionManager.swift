@@ -9,7 +9,7 @@ import Foundation
 import AVFoundation
 
 /// Manages audio sessions and provides functionality for configuration and microphone selection.
-open class SCKAudioSessionManager: NSObject {    
+open class SCKAudioSessionManager: @unchecked Sendable {
     /// Configures the audio session for recording and playback.
     ///
     /// - Throws: An `AudioSessionError` if the configuration fails.

@@ -65,7 +65,7 @@ public class SCKRealTimeAudioRecorder: SCKAudioSessionManager {
             AVEncoderAudioQualityKey: AVAudioQuality.max.rawValue
         ]
     }
-
+    let label = DispatchQueue(label: "recorder.configure")
     private var fileURL: URL {
         if let cachedFileURL {
             return cachedFileURL
@@ -183,35 +183,9 @@ extension SCKRealTimeAudioRecorder {
 
     /// Updates the average power based on the provided buffer and sends it to the recordingPowerSubject.
     private func sendAveragePower(with buffer: AVAudioPCMBuffer) {
-        guard let channelData = buffer.floatChannelData else { return }
-        let channelDataValue = channelData.pointee
-        let channelDataValueArray = stride(
-            from: 0,
-            to: Int(buffer.frameLength),
-            by: buffer.stride
-        ).map { channelDataValue[$0] }
-
-        let rms = sqrt(channelDataValueArray.map { $0 * $0 }
-            .reduce(0, +) / Float(buffer.frameLength))
-
-        let power = scaledPower(rms: rms)
+        let power = APLConverter.convertToAveragePower(from: buffer)
         avgPowers.append(power)
         triggerRecorderDidUpdatePowerLevels(avgPowers)
-    }
-
-    private func scaledPower(rms: Float) -> Float {
-        let power = rms > 0 ? 20 * log10(rms) : -Float.infinity
-        let minDb: Float = -80
-
-        guard power.isFinite else { return 0.0 }
-
-        if power < minDb {
-            return 0.0
-        } else if power >= 0 {
-            return 1.0
-        } else {
-            return (power - minDb) / (0 - minDb)
-        }
     }
 
     /// Updates and sends the current recording time using the provided AVAudioTime.

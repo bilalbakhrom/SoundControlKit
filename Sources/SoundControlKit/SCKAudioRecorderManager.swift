@@ -10,8 +10,21 @@ import AVFoundation
 import Combine
 
 /// Manages audio recording functionality, including setup, configuration, and control.
-open class SCKAudioRecorderManager: SCKAudioSessionManager, @unchecked Sendable {
+open class SCKAudioRecorderManager: SCKAudioSessionManager {
     public weak var delegate: SCKAudioRecorderManagerDelegate?
+    
+    /// The AVAudioRecorder instance for handling audio recording.
+    private var recorder: AVAudioRecorder?
+    /// The file name option for the recording.
+    private(set) var recordingDetails: RecordingDetails
+    /// Recording meter levels.
+    private var avgPowers: [Float] = []
+    /// A cancellable timer for managing recording time (not currently used).
+    private var timer: AnyCancellable?
+    /// Holds separate locks for each method.
+    private let locks = Array(repeating: NSLock(), count: 5)
+    /// Coordinator to hold `AVAudioRecorderDelegate`.
+    private weak var coordinator: Coordinator?
 
     /// The current state of the audio recording (stopped, recording, or paused).
     private var recordingState: SCKRecordingState = .stopped {
@@ -24,21 +37,7 @@ open class SCKAudioRecorderManager: SCKAudioSessionManager, @unchecked Sendable 
             try? setupAudioRecorder()
         }
     }
-    
-    /// The AVAudioRecorder instance for handling audio recording.
-    private var recorder: AVAudioRecorder?
-    
-    /// The file name option for the recording.
-    private(set) var recordingDetails: RecordingDetails
-    
-    private var avgPowers: [Float] = []
-    
-    /// A cancellable timer for managing recording time (not currently used).
-    private var timer: AnyCancellable?
 
-    /// Holds separate locks for each method
-    private let locks = Array(repeating: NSLock(), count: 5)
-    
     public var isRecordPremissionGranted: Bool {
         if #available(iOS 17.0, *) {
             return AVAudioApplication.shared.recordPermission == .granted
@@ -57,6 +56,8 @@ open class SCKAudioRecorderManager: SCKAudioSessionManager, @unchecked Sendable 
         self.recordingDetails = RecordingDetails(option: fileName, format: format)
         self.delegate = delegate
         super.init()
+
+        coordinator = Coordinator(parent: self)
     }
 
     public func configureRecorder() throws {
@@ -152,14 +153,122 @@ open class SCKAudioRecorderManager: SCKAudioSessionManager, @unchecked Sendable 
             throw SCKRecorderError.unableToCreateAudioRecorder
         }
         
-        recorder?.delegate = self
+        recorder?.delegate = coordinator
         recorder?.isMeteringEnabled = true
         recorder?.prepareToRecord()
     }
     
-    // MARK: - Recording Control
+    // MARK: - Wave Controller
     
+    private func updateAveragePower() {
+        guard let recorder else { return }
+        let power = APLConverter.normalizedAveragePower(
+            from: recorder,
+            isStereoSupported: isStereoSupported
+        )
+        avgPowers.append(power)
+        triggerRecorderDidUpdatePowerLevels(avgPowers)
+    }
+
+    // MARK: - Timer Methods
     
+    /// Initiates a timer to track the duration of the audio recording.
+    /// The timer publishes updates every 0.1 seconds on the main thread.
+    /// When recording, the timer updates and sends the formatted duration to the `audioRecordingTimerPublisher`.
+    private func startTimer() {
+        timer = Timer
+            .publish(every: 0.1, on: .main, in: .common)
+            .autoconnect()
+            .sink { [weak self] timer in
+                guard let self, let recorder, self.recordingState == .recording else { return }
+
+                // Format the current recording duration and send it to the publisher.
+                let timeInMinutesAndSeconds = self.formatTime(recorder.currentTime)
+                triggerRecorderDidUpdateTime(timeInMinutesAndSeconds)
+                self.updateAveragePower()
+            }
+    }
+
+    /// Stops the recording timer.
+    /// Cancels the timer subscription and releases the timer instance.
+    private func stopTimer() {
+        timer?.cancel()
+        timer = nil
+    }
+}
+
+// MARK: - Controller
+
+extension SCKAudioRecorderManager {
+    /// Initiates the audio recording process.
+    public func record() {
+        guard recordingState != .recording && isRecordPremissionGranted else { return }
+
+        // Update session configuration for recording.
+        try? configurePlayAndRecordAudioSession()
+
+        // Start the recording timer if not already initialized.
+        startTimer()
+
+        // Begin audio recording and update the state to recording.
+        recorder?.record()
+        recordingState = .recording
+    }
+
+    /// Initiates the audio recording process asynchronously.
+    /// If not already recording, triggers a haptic vibration.
+    @MainActor
+    public func record() async {
+        // Do not initiate recording if the app is already recording.
+        guard recordingState != .recording && isRecordPremissionGranted else { return }
+
+        // Update session configuration for recording.
+        try? await configurePlayAndRecordAudioSession()
+
+        // If transitioning from a stopped state, provide a success feedback notification.
+        if recordingState == .stopped {
+            await sendFeedbackNotification()
+        }
+
+        // Start the recording timer if not already initialized.
+        if timer == nil {
+            startTimer()
+        }
+
+        // Begin audio recording and update the state to recording.
+        recorder?.record()
+        recordingState = .recording
+    }
+
+    /// Pauses the audio recording process if currently recording.
+    public func pause() {
+        // Do not pause if the app is not currently recording.
+        guard recordingState == .recording else { return }
+
+        // Pause the audio recorder and update the state to paused.
+        recorder?.pause()
+        recordingState = .paused
+    }
+
+
+    /// Stops the audio recording process.
+    public func stop() {
+        recorder?.stop()
+        recordingState = .stopped
+        avgPowers = []
+        stopTimer()
+    }
+
+    /// Deletes the current recording.
+    public func delete() {
+        // Stop audio recorder before deleting.
+        stop()
+        // Delete recording.
+        recorder?.deleteRecording()
+        // Post a notification to stop playback if it's playing.
+        NotificationCenter.default.post(sckNotification: .stopAllAudioPlayback)
+    }
+
     /// Updates the audio input orientation and data source based on the specified parameters.
     ///
     /// - Parameters:
@@ -206,175 +315,56 @@ open class SCKAudioRecorderManager: SCKAudioSessionManager, @unchecked Sendable 
             throw SCKRecorderError.unableToSelectDataSource(name: newDataSource.dataSourceName)
         }
     }
+}
 
-    /// Initiates the audio recording process.
-    public func record() {
-        guard recordingState != .recording && isRecordPremissionGranted else { return }
-        
-        // Update session configuration for recording.
-        try? configurePlayAndRecordAudioSession()
-        
-        // Start the recording timer if not already initialized.
-        startRecordingTimer()
-        
-        // Begin audio recording and update the state to recording.
-        recorder?.record()
-        recordingState = .recording
-    }
-    
-    /// Initiates the audio recording process asynchronously.
-    /// If not already recording, triggers a haptic vibration.
-    @MainActor
-    public func record() async {
-        // Do not initiate recording if the app is already recording.
-        guard recordingState != .recording && isRecordPremissionGranted else { return }
-        
-        // Update session configuration for recording.
-        try? await configurePlayAndRecordAudioSession()
+// MARK: - AVAudioRecorderDelegate
 
-        // If transitioning from a stopped state, provide a success feedback notification.
-        if recordingState == .stopped {
-            await sendFeedbackNotification()
+extension SCKAudioRecorderManager {
+    public final class Coordinator: NSObject, AVAudioRecorderDelegate {
+        public let parent: SCKAudioRecorderManager
+
+        public init(parent: SCKAudioRecorderManager) {
+            self.parent = parent
         }
 
-        // Start the recording timer if not already initialized.
-        if timer == nil {
-            startRecordingTimer()
+        public func audioRecorderDidFinishRecording(_ recorder: AVAudioRecorder, successfully flag: Bool) {
+            // Move the recorded audio file to the documents directory.
+            let destURL = FileManager.default.urlInDocumentsDirectory(named: parent.recordingDetails.fileName)
+            try? FileManager.default.removeItem(at: destURL)
+            try? FileManager.default.moveItem(at: recorder.url, to: destURL)
+            recorder.prepareToRecord()
+
+            parent.avgPowers = []
+            parent.recordingState = .stopped
+            parent.triggerRecorderDidFinish(recorder.url)
         }
-
-        // Begin audio recording and update the state to recording.
-        recorder?.record()
-        recordingState = .recording
     }
+}
 
-    /// Pauses the audio recording process if currently recording.
-    public func pauseRecording() {
-        // Do not pause if the app is not currently recording.
-        guard recordingState == .recording else { return }
+// MARK: - Helper Methods
 
-        // Pause the audio recorder and update the state to paused.
-        recorder?.pause()
-        recordingState = .paused
-    }
-
-    
-    /// Stops the audio recording process.
-    public func stopRecording() {
-        recorder?.stop()
-        recordingState = .stopped
-        avgPowers = []
-        stopTimer()
-    }
-    
-    /// Deletes the current recording.
-    public func deleteRecording() {
-        // Stop audio recorder before deleting.
-        stopRecording()
-        
-        // Delete recording.
-        recorder?.deleteRecording()
-        
-        // Post a notification to stop playback if it's playing.
-        NotificationCenter.default.post(sckNotification: .stopAllAudioPlayback)
-    }
-    
-    // MARK: - Wave Controller
-    
-    @objc func updateAveragePower() {
-        guard let recorder else { return }
-        recorder.updateMeters()
-
-        var avgPower: Float = 0.0
-
-        if isStereoSupported {
-            // Stereo recording, get power levels for both channels
-            let powerChannel0 = recorder.averagePower(forChannel: 0)
-            let powerChannel1 = recorder.averagePower(forChannel: 1)
-
-            // Normalize and combine power levels
-            avgPower = (powerChannel0 + powerChannel1) / 200.0 + 0.5
-        } else {
-            // Mono recording, get power level for channel 0
-            let powerChannel0 = recorder.averagePower(forChannel: 0)
-
-            // Normalize power level
-            avgPower = (powerChannel0 + 50.0) / 100.0
-        }
-
-        // Update your wave view based on normalizedPower
-        let value = round(avgPower * 10) / 10
-        avgPowers.append(value)
-        triggerRecorderDidUpdatePowerLevels(avgPowers)
-    }
-
-    // MARK: - Timer Methods
-    
-    /// Initiates a timer to track the duration of the audio recording.
-    /// The timer publishes updates every 0.1 seconds on the main thread.
-    /// When recording, the timer updates and sends the formatted duration to the `audioRecordingTimerPublisher`.
-    private func startRecordingTimer() {
-        timer = Timer
-            .publish(every: 0.1, on: .main, in: .common)
-            .autoconnect()
-            .sink { [weak self] timer in
-                guard let self, let recorder, self.recordingState == .recording else { return }
-
-                // Format the current recording duration and send it to the publisher.
-                let timeInMinutesAndSeconds = self.formatTime(recorder.currentTime)
-                triggerRecorderDidUpdateTime(timeInMinutesAndSeconds)
-                self.updateAveragePower()
-            }
-    }
-
-    /// Stops the recording timer.
-    /// Cancels the timer subscription and releases the timer instance.
-    func stopTimer() {
-        // Cancel the timer subscription and release the timer instance.
-        timer?.cancel()
-        timer = nil
-    }
-
+extension SCKAudioRecorderManager {
     /// Formats the given duration in seconds into a string representing minutes and seconds.
     /// - Parameter duration: The duration in seconds.
     /// - Returns: A formatted string in the "MM:SS" (minutes:seconds) format.
-    func formatTime(_ duration: TimeInterval) -> String {
+    private func formatTime(_ duration: TimeInterval) -> String {
         // Calculate minutes and seconds from the duration.
         let minutes = Int(duration) / 60
         let seconds = Int(duration) % 60
-        
+
         // Format the duration as "MM:SS" and return the result.
         return String(format: "%02d:%02d", minutes, seconds)
     }
-    
-    // MARK: - Private Methods
-    
+
     /// Sends a UINotificationFeedbackGenerator notification with a success feedback type.
     /// Delays execution briefly to allow for feedback sensation.
     private func sendFeedbackNotification() async {
         // Create and prepare a UINotificationFeedbackGenerator.
         let generator = await UINotificationFeedbackGenerator()
         await generator.prepare()
-        
         // Trigger a success notification feedback.
         await generator.notificationOccurred(.success)
-        
         // Introduce a brief delay for the feedback sensation.
         try? await Task.sleep(nanoseconds: 100_000_000)
-    }
-}
-
-// MARK: - AVAudioRecorderDelegate
-
-extension SCKAudioRecorderManager: AVAudioRecorderDelegate {
-    public func audioRecorderDidFinishRecording(_ recorder: AVAudioRecorder, successfully flag: Bool) {
-        // Move the recorded audio file to the documents directory.
-        let destURL = FileManager.default.urlInDocumentsDirectory(named: recordingDetails.fileName)
-        try? FileManager.default.removeItem(at: destURL)
-        try? FileManager.default.moveItem(at: recorder.url, to: destURL)
-        recorder.prepareToRecord()
-
-        avgPowers = []
-        recordingState = .stopped
-        triggerRecorderDidFinish(recorder.url)
     }
 }
