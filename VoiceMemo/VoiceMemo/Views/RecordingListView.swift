@@ -35,6 +35,6 @@ struct RecordingListView: View {
     }
 
     private func isLastAudio(at index: Int) -> Bool {
-        soundManager.audioPlayers.count - 1 == index
+        index == soundManager.audioPlayers.count - 1
     }
 }

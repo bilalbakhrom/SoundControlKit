@@ -38,7 +38,7 @@ open class SCKAudioRecorderManager: SCKAudioSessionManager {
         }
     }
 
-    public var isRecordPremissionGranted: Bool {
+    public var isRecordPermissionGranted: Bool {
         if #available(iOS 17.0, *) {
             return AVAudioApplication.shared.recordPermission == .granted
         } else {
@@ -62,7 +62,7 @@ open class SCKAudioRecorderManager: SCKAudioSessionManager {
 
     public func configureRecorder() throws {
         // Check if the user has granted permission for audio recording.
-        guard isRecordPremissionGranted else {
+        guard isRecordPermissionGranted else {
             throw SCKRecorderError.microphonePermissionRequired
         }
         
@@ -99,7 +99,7 @@ open class SCKAudioRecorderManager: SCKAudioSessionManager {
 
     // MARK: - Triggers
 
-    private func performDelegateCall(lockIndex: LockIndex, action: (SCKAudioRecorderManagerDelegate) -> Void) {
+    private func performDelegateCall(lockIndex: AudioRecordingAspect, action: (SCKAudioRecorderManagerDelegate) -> Void) {
         guard let delegate else { return }
         let lock = locks[lockIndex.index]
 
@@ -202,7 +202,7 @@ open class SCKAudioRecorderManager: SCKAudioSessionManager {
 extension SCKAudioRecorderManager {
     /// Initiates the audio recording process.
     public func record() {
-        guard recordingState != .recording && isRecordPremissionGranted else { return }
+        guard recordingState != .recording && isRecordPermissionGranted else { return }
 
         // Update session configuration for recording.
         try? configurePlayAndRecordAudioSession()
@@ -220,7 +220,7 @@ extension SCKAudioRecorderManager {
     @MainActor
     public func record() async {
         // Do not initiate recording if the app is already recording.
-        guard recordingState != .recording && isRecordPremissionGranted else { return }
+        guard recordingState != .recording && isRecordPermissionGranted else { return }
 
         // Update session configuration for recording.
         try? await configurePlayAndRecordAudioSession()

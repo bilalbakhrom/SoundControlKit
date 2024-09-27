@@ -13,7 +13,7 @@ extension View {
     }
 }
 
-fileprivate struct RoundedCorners: Shape {
+private struct RoundedCorners: Shape {
     var radius: CGFloat = 0
     var corners: UIRectCorner = []
 
