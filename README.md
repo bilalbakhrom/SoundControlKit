@@ -1,56 +1,79 @@
-# SoundControlKit (SCK)
+# SoundControlKit
 
-SoundControlKit (SCK) is a Swift package designed to simplify audio management in iOS applications. It provides an easy-to-use `AudioManager` for handling audio recording and playback.
+SoundControlKit is a Swift package for managing audio recording and playback with real-time capabilities. It simplifies audio session management, provides robust audio recorder functionality, and integrates seamless playback features.
 
-## Overview
+## Features
 
-The SCK package offers a convenient solution for managing audio-related tasks in your Swift projects. It includes functionalities for configuring the audio session, recording audio, playing audio, and controlling playback.
+- **Real-Time Audio Recording**: Capture audio with real-time visual feedback.
+- **Audio Playback**: Play audio files with controls for managing playback state.
+- **Audio Session Management**: Handle audio sessions easily with configurable options.
+- **Custom Output Formats**: Allow clients to specify output formats and file names.
 
 ## Installation
 
-### Swift Package Manager
-
-You can add SoundControlKit as a dependency in your Swift Package Manager-enabled project. Add the following to your `Package.swift` file:
+Add `SoundControlKit` to your `Package.swift`:
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/bilalBakhrom/SoundControlKit.git", from: "2.1.0")
+    .package(url: "https://github.com/bilalbakhrom/SoundControlKit.git", from: "3.0.0")
 ]
 ```
 
 ## Usage
 
-To use SoundControlKit in your project, follow these steps:
+To use **SoundControlKit** in your project, follow these steps:
+
+### SCKAudioRecorderManager
 
 ```swift
 import SoundControlKit
 
-// Create an instance of `SCKAudioManager`.
-let audioManager = SCKAudioManager(fileName: .date, format: .aac, delegate: self)
-
-// MARK: - Control Recording
+// Create an instance of `SCKAudioRecorderManager`.
+let recorderManager = SCKAudioRecorderManager()
+recorderManager.delegate = self
 
 // Start recording audio.
-audioManager.configureRecorder()
-audioManager.record()
-
-// OR: Start recording audio with haptic vibration at the beginning.
-Task { await audioManager.record() }
-
+recorderManager.record()
 // Pause the recording.
-audioManager.pauseRecording()
+recorderManager.pause()
 // Stop the recording.
-audioManager.stopRecording()
+recorderManager.stop()
+```
 
-// MARK: - Control Playback
+### SCKRealTimeAudioRecorder
+
+```swift
+// Create an instance of `SCKRealTimeAudioRecorder`.
+let realTimeRecorder = SCKRealTimeAudioRecorder(fileName: .dateWithTime, outputFormat: .aac)
+realTimeRecorder.delegate = self
+
+// Start real-time recording.
+realTimeRecorder.record()
+// Stop real-time recording.
+realTimeRecorder.stop()
+```
+
+### SCKAudioPlayer
+
+```swift
+// Create an instance of `SCKAudioPlayer`.
+let audioPlayer = SCKAudioPlayer(delegate: self)
 
 // Play the recorded audio.
-audioManager.play()
+audioPlayer.play()
 // Pause the playback.
-audioManager.pausePlayback()
+audioPlayer.pause()
 // Stop the playback.
-audioManager.stopPlayback()
+audioPlayer.stop()
+// Forwards the audio playback by a specified number of seconds.
+audioPlayer.forward(by: 5)
+// Rewinds the audio playback by a specified number of seconds.
+audioPlayer.rewind(by: 5)
 ```
+
+### Delegate Implementation
+
+Ensure to conform to the appropriate delegate protocols to handle audio events effectively.
 
 ### Control Notifications
 
@@ -64,7 +87,7 @@ NotificationCenter.default.post(sckNotification: .soundControlKitRequiredToStopA
 
 ## Dynamic File Naming and Formats
 
-The `SCKAudioManager` now supports dynamic file naming options, allowing the client to specify the recording file name based on:
+The package supports dynamic file naming options, allowing the client to specify the recording file name based on:
 
 - Current date (`.date`)
 - Current date with time (`.dateWithTime`)
