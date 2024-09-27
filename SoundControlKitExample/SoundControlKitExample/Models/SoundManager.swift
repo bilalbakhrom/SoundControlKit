@@ -18,6 +18,7 @@ final class SoundManager: NSObject, ObservableObject {
     @Published var isPermissionAlertPresented: Bool = false
     @Published var recordingCurrentTime: String = "00:00"
     @Published var audioPlayers: [SCKAudioPlayer] = []
+    @Published var isPlaybackSessionEnabled: Bool = false
 
     public var isRecordPremissionGranted: Bool {
         if #available(iOS 17.0, *) {
@@ -33,22 +34,6 @@ final class SoundManager: NSObject, ObservableObject {
 
         realTimeRecorder.delegate = self
         realTimeRecorder.configure()
-    }
-
-    func removeAudio(at index: Int) {
-        guard index < audioPlayers.count else { return }
-
-        do {
-            // Get the URL of the audio file to be removed
-            let audioPlayer = audioPlayers[index]
-            audioPlayer.stop()
-            // Remove the audio URL from the array
-            audioPlayers.remove(at: index)
-            // Remove file from directory
-            try FileManager.default.removeItem(at: audioPlayer.audioURL)
-        } catch {
-            print("Error removing audio file: \(error.localizedDescription)")
-        }
     }
 
     private func collectAudioFiles() -> [URL] {
@@ -84,6 +69,24 @@ extension SoundManager {
         loadAudioFiles()
     }
 
+    func setPlaybackSession() {
+        if isRecording {
+            realTimeRecorder.stop()
+        }
+
+        guard !isPlaybackSessionEnabled else { return }
+
+        do {
+            let session = AVAudioSession.sharedInstance()
+            try session.setCategory(.playback, mode: .default)
+            try session.overrideOutputAudioPort(.speaker)
+            try session.setActive(true)
+            isPlaybackSessionEnabled = true
+        } catch {
+            print("Failure: \(error.localizedDescription)")
+        }
+    }
+
     func recordAndStop() {
         guard isRecordPremissionGranted else {
             Task { await askRecordingPermission() }
@@ -94,6 +97,9 @@ extension SoundManager {
             realTimeRecorder.stop()
         } else {
             do {
+                isPlaybackSessionEnabled = false
+                stopAll()
+                closeAll()
                 try realTimeRecorder.start()
             } catch {
                 print("Failed to start recording: \(error.localizedDescription)")
@@ -101,10 +107,35 @@ extension SoundManager {
         }
     }
 
+    func removeAudio(at index: Int) {
+        guard index < audioPlayers.count else { return }
+
+        do {
+            // Get the URL of the audio file to be removed
+            let audioPlayer = audioPlayers[index]
+            audioPlayer.stop()
+            // Remove the audio URL from the array
+            audioPlayers.remove(at: index)
+            // Remove file from directory
+            try FileManager.default.removeItem(at: audioPlayer.audioURL)
+        } catch {
+            print("Error removing audio file: \(error.localizedDescription)")
+        }
+    }
+
+    func stopAll() {
+        NotificationCenter.default.post(sckNotification: .stopAllAudioPlayback)
+    }
+
+    func closeAll() {
+        audioPlayers.closeAll()
+    }
+
     private func loadAudioFiles() {
         let urls = self.collectAudioFiles()
         audioPlayers = urls.map(SCKAudioPlayer.init)
         audioPlayers.forEach { try? $0.configure() }
+        closeAll()
     }
 
     private func askRecordingPermission() async {

@@ -39,15 +39,26 @@ struct PlayerView: View {
                     .foregroundColor(.white.opacity(0.6))
             }
 
-            VStack(spacing: 20) {
-                progressView
+            if player.isExpanded {
+                VStack(spacing: 20) {
+                    progressView
 
-                controllerView
+                    controllerView
+                }
+                .padding(.vertical, 20)
             }
-            .padding(.vertical, 20)
         }
         .padding(.vertical, 12)
-        .contentShape(.rect)
+        .background(Color.black)
+        .animation(.snappy, value: player.isExpanded)
+        .onTapGesture {
+            guard !player.isExpanded else { return }
+
+            soundManager.stopAll()
+            soundManager.closeAll()
+            soundManager.setPlaybackSession()
+            player.setExpanded(true)
+        }
     }
 
     private var progressView: some View {
@@ -102,11 +113,7 @@ struct PlayerView: View {
 
     private var playerButton: some View {
         Button {
-            if !player.isPlaying {
-                NotificationCenter.default.post(sckNotification: .stopAllAudioPlayback)
-            }
-
-            player.isPlaying ? player.pausePlayback() : player.play()
+            player.isPlaying ? player.pause() : player.play()
         } label: {
             Image(systemName: player.isPlaying ? "pause.circle.fill" : "play.circle.fill")
                 .resizable()

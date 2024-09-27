@@ -16,6 +16,7 @@ final public class SCKAudioPlayer: NSObject, ObservableObject {
     @Published public var remainingTime: String = "00:00"
     @Published public var progress: Double = 0.0
     @Published public private(set) var playbackState: SCKPlaybackState = .stopped
+    @Published public private(set) var parameters: [String: Any] = [:]
 
     private var player: AVAudioPlayer?
     private var subscriptions: Set<AnyCancellable> = []
@@ -62,12 +63,14 @@ final public class SCKAudioPlayer: NSObject, ObservableObject {
         player?.isMeteringEnabled = true
         player?.delegate = self
         player?.prepareToPlay()
+    }
 
-        // Configure audio session.
-//        let session = AVAudioSession.sharedInstance()
-//        try session.setCategory(.playback, mode: .default)
-//        try session.overrideOutputAudioPort(.speaker)
-//        try session.setActive(true)
+    public func setParameter(forKey key: String, value: Any) {
+        parameters[key] = value
+    }
+
+    public func getParameter(forKey key: String) -> Any {
+        parameters[key]
     }
 
     /// Starts a timer to track the progress and duration of the audio playback.
@@ -138,7 +141,7 @@ extension SCKAudioPlayer {
     }
 
     /// Pauses the audio playback.
-    public func pausePlayback() {
+    public func pause() {
         player?.pause()
         playbackState = .paused
     }
