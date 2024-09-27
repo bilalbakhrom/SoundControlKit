@@ -43,7 +43,15 @@ struct PlayerView: View {
                 VStack(spacing: 20) {
                     progressView
 
-                    controllerView
+                    HStack(spacing: .zero) {
+                        Spacer()
+
+                        controllerView
+
+                        Spacer()
+
+                        trashButton
+                    }
                 }
                 .padding(.vertical, 20)
             }
@@ -115,14 +123,25 @@ struct PlayerView: View {
         Button {
             player.isPlaying ? player.pause() : player.play()
         } label: {
-            Image(systemName: player.isPlaying ? "pause.circle.fill" : "play.circle.fill")
+            Image(systemName: player.isPlaying ? "pause.fill" : "play.fill")
                 .resizable()
-                .frame(width: 30, height: 30)
-                .foregroundColor(.blue)
+                .frame(width: 24, height: 24)
+                .foregroundColor(.white)
         }
-        .frame(width: 30, height: 30)
-        .background(Color.white)
-        .clipShape(.circle)
+        .frame(width: 24, height: 24)
+        .buttonStyle(.plain)
+    }
+
+    private var trashButton: some View {
+        Button {
+            soundManager.removeAudio(at: index)
+        } label: {
+            Image(systemName: "trash")
+                .resizable()
+                .frame(width: 24, height: 24)
+                .foregroundStyle(.blue)
+        }
+        .frame(width: 24, height: 24)
         .buttonStyle(.plain)
     }
 
