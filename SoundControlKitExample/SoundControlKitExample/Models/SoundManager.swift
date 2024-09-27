@@ -35,29 +35,6 @@ final class SoundManager: NSObject, ObservableObject {
         realTimeRecorder.configure()
     }
 
-    func prepare() {
-        realTimeRecorder.configure()
-        loadAudioFiles()
-    }
-
-    @MainActor
-    func recordAndStop() {
-        guard isRecordPremissionGranted else {
-            askRecordingPermission()
-            return
-        }
-
-        if isRecording {
-            realTimeRecorder.stop()
-        } else {
-            do {
-                try realTimeRecorder.start()
-            } catch {
-                print("Failed to start recording: \(error.localizedDescription)")
-            }
-        }
-    }
-
     func removeAudio(at index: Int) {
         guard index < audioPlayers.count else { return }
 
@@ -71,29 +48,6 @@ final class SoundManager: NSObject, ObservableObject {
             try FileManager.default.removeItem(at: audioPlayer.audioURL)
         } catch {
             print("Error removing audio file: \(error.localizedDescription)")
-        }
-    }
-
-    private func loadAudioFiles() {
-        let urls = self.collectAudioFiles()
-        audioPlayers = urls.map(SCKAudioPlayer.init)
-        audioPlayers.forEach { try? $0.configure() }
-    }
-
-    private func askRecordingPermission() {
-        if AVAudioSession.sharedInstance().recordPermission == .undetermined {
-            if #available(iOS 17.0, *) {
-                AVAudioApplication.requestRecordPermission { [weak self] _ in
-                    self?.prepare()
-                }
-            } else {
-                let audioSession = AVAudioSession.sharedInstance()
-                audioSession.requestRecordPermission { [weak self] _ in
-                    self?.prepare()
-                }
-            }
-        } else {
-            isPermissionAlertPresented = true
         }
     }
 
@@ -114,6 +68,59 @@ final class SoundManager: NSObject, ObservableObject {
         } catch {
             print("Error while fetching audio files: \(error.localizedDescription)")
             return []
+        }
+    }
+}
+
+@MainActor
+extension SoundManager {
+    func prepare() {
+        guard isRecordPremissionGranted else {
+            Task { await askRecordingPermission() }
+            return
+        }
+
+        realTimeRecorder.configure()
+        loadAudioFiles()
+    }
+
+    func recordAndStop() {
+        guard isRecordPremissionGranted else {
+            Task { await askRecordingPermission() }
+            return
+        }
+
+        if isRecording {
+            realTimeRecorder.stop()
+        } else {
+            do {
+                try realTimeRecorder.start()
+            } catch {
+                print("Failed to start recording: \(error.localizedDescription)")
+            }
+        }
+    }
+
+    private func loadAudioFiles() {
+        let urls = self.collectAudioFiles()
+        audioPlayers = urls.map(SCKAudioPlayer.init)
+        audioPlayers.forEach { try? $0.configure() }
+    }
+
+    private func askRecordingPermission() async {
+        if AVAudioSession.sharedInstance().recordPermission == .undetermined {
+            if #available(iOS 17.0, *) {
+                guard await AVAudioApplication.requestRecordPermission() else { return }
+                prepare()
+            } else {
+                let audioSession = AVAudioSession.sharedInstance()
+                audioSession.requestRecordPermission { [weak self] granted in
+                    guard granted else { return }
+                    self?.prepare()
+                }
+            }
+        } else {
+            isPermissionAlertPresented = true
         }
     }
 }

@@ -11,18 +11,30 @@ struct RecordingListView: View {
     @EnvironmentObject private var soundManager: SoundManager
 
     var body: some View {
-        List {
-            ForEach(Array(soundManager.audioPlayers.enumerated()), id: \.element) { index, player in
-                PlayerView(player: player, index: index)
-                    .swipeActions(edge: .trailing) {
-                        Button(role: .destructive) {
-                            soundManager.removeAudio(at: index)
-                        } label: {
-                            Label("Delete", systemImage: "trash")
+        ScrollView {
+            LazyVStack {
+                ForEach(Array(soundManager.audioPlayers.enumerated()), id: \.element) { index, player in
+                    VStack(spacing: .zero) {
+                        PlayerView(player: player, index: index)
+                            .swipeActions(edge: .trailing) {
+                                Button(role: .destructive) {
+                                    soundManager.removeAudio(at: index)
+                                } label: {
+                                    Label("Delete", systemImage: "trash")
+                                }
+                            }
+
+                        if !isLastAudio(at: index) {
+                            Divider()
                         }
                     }
+                }
             }
+            .padding()
         }
-        .listStyle(PlainListStyle())
+    }
+
+    private func isLastAudio(at index: Int) -> Bool {
+        soundManager.audioPlayers.count - 1 == index
     }
 }

@@ -19,39 +19,104 @@ struct PlayerView: View {
     }
 
     var body: some View {
-        HStack {
-            VStack(alignment: .leading, spacing: 5) {
-                Text(player.name)
-                    .font(.headline)
+        VStack {
+            HStack {
+                VStack(alignment: .leading, spacing: 5) {
+                    Text(player.name)
+                        .font(.body)
 
-                if let date = player.date {
-                    Text(date)
-                        .font(.caption)
-                        .foregroundColor(.white.opacity(0.6))
+                    if let date = player.date {
+                        Text(date)
+                            .font(.caption)
+                            .foregroundColor(.white.opacity(0.6))
+                    }
                 }
 
-                Text("\(player.currentTime) / \(player.totalTime)")
+                Spacer()
+
+                Text(player.totalTime)
                     .font(.caption)
                     .foregroundColor(.white.opacity(0.6))
             }
 
+            VStack(spacing: 20) {
+                progressView
+
+                controllerView
+            }
+            .padding(.vertical, 20)
+        }
+        .padding(.vertical, 12)
+        .contentShape(.rect)
+    }
+
+    private var progressView: some View {
+        VStack(spacing: 8) {
+            ProgressView(value: player.progress)
+                .progressViewStyle(.linear)
+                .tint(Color.white)
+
+            HStack(spacing: .zero) {
+                Text(player.currentTime)
+                    .font(.system(size: 12))
+                    .foregroundColor(.white.opacity(0.6))
+
+                Spacer()
+
+                Text(player.remainingTime)
+                    .font(.system(size: 12))
+                    .foregroundColor(.white.opacity(0.6))
+            }
+        }
+    }
+
+    private var controllerView: some View {
+        HStack(spacing: 30) {
             Spacer()
 
             Button {
-                if !player.isPlaying {
-                    NotificationCenter.default.post(sckNotification: .stopAllAudioPlayback)
-                }
-                
-                player.isPlaying ? player.stop() : player.play()
+                player.rewindPlayback(by: 5)
             } label: {
-                Image(systemName: player.isPlaying ? "stop.circle.fill" : "play.circle.fill")
+                Image(systemName: "gobackward.5")
                     .resizable()
-                    .frame(width: 30, height: 30)
-                    .foregroundColor(.blue)
+                    .frame(width: 20, height: 20)
+                    .foregroundColor(.white)
             }
+            .frame(width: 24, height: 24)
+
+            playerButton
+
+            Button {
+                player.forwardPlayback(by: 5)
+            } label: {
+                Image(systemName: "goforward.5")
+                    .resizable()
+                    .frame(width: 20, height: 20)
+                    .foregroundColor(.white)
+            }
+            .frame(width: 24, height: 24)
+
+            Spacer()
         }
-        .padding(.vertical, 8)
-        .contentShape(Rectangle())
+    }
+
+    private var playerButton: some View {
+        Button {
+            if !player.isPlaying {
+                NotificationCenter.default.post(sckNotification: .stopAllAudioPlayback)
+            }
+
+            player.isPlaying ? player.pausePlayback() : player.play()
+        } label: {
+            Image(systemName: player.isPlaying ? "pause.circle.fill" : "play.circle.fill")
+                .resizable()
+                .frame(width: 30, height: 30)
+                .foregroundColor(.blue)
+        }
+        .frame(width: 30, height: 30)
+        .background(Color.white)
+        .clipShape(.circle)
+        .buttonStyle(.plain)
     }
 
     private func formattedTime(_ time: TimeInterval) -> String {
