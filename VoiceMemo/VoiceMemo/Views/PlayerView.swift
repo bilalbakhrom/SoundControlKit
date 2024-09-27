@@ -94,7 +94,7 @@ struct PlayerView: View {
             Spacer()
 
             Button {
-                player.rewindPlayback(by: 5)
+                player.rewind(by: 5)
             } label: {
                 Image(systemName: "gobackward.5")
                     .resizable()
@@ -106,7 +106,7 @@ struct PlayerView: View {
             playerButton
 
             Button {
-                player.forwardPlayback(by: 5)
+                player.forward(by: 5)
             } label: {
                 Image(systemName: "goforward.5")
                     .resizable()

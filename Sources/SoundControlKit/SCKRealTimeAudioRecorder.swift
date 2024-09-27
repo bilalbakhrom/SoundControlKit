@@ -65,7 +65,7 @@ public class SCKRealTimeAudioRecorder: SCKAudioSessionManager {
             AVEncoderAudioQualityKey: AVAudioQuality.max.rawValue
         ]
     }
-    let label = DispatchQueue(label: "recorder.configure")
+
     private var fileURL: URL {
         if let cachedFileURL {
             return cachedFileURL
@@ -225,7 +225,7 @@ extension SCKRealTimeAudioRecorder {
     ///
     /// - Throws: `SCKAudioRecorderError` if the audio session configuration or audio engine fails.
     @MainActor
-    public func start() throws {
+    public func record() throws {
         guard canStartRecording else { return }
 
         Task { @MainActor in
