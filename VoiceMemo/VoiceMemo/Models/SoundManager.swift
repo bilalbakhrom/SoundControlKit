@@ -105,7 +105,7 @@ extension SoundManager {
                 isPlaybackSessionEnabled = false
                 stopAll()
                 closeAll()
-                try realTimeRecorder.start()
+                try realTimeRecorder.record()
             } catch {
                 print("Failed to start recording: \(error.localizedDescription)")
             }

@@ -160,7 +160,7 @@ extension SCKAudioPlayer {
     /// Forwards the audio playback by a specified number of seconds.
     ///
     /// - Parameter seconds: The number of seconds to forward the playback.
-    public func forwardPlayback(by seconds: TimeInterval) {
+    public func forward(by seconds: TimeInterval) {
         guard let player else { return }
 
         // Calculate the new time after forwarding by the specified number of seconds.
@@ -174,7 +174,7 @@ extension SCKAudioPlayer {
     /// Rewinds the audio playback by a specified number of seconds.
     ///
     /// - Parameter seconds: The number of seconds to rewind the playback.
-    public func rewindPlayback(by seconds: TimeInterval) {
+    public func rewind(by seconds: TimeInterval) {
         guard let player else { return }
 
         // Calculate the new time after rewinding by the specified number of seconds.
@@ -186,7 +186,7 @@ extension SCKAudioPlayer {
     }
 
     /// Stops the audio playback and resets it to the beginning.
-    public func resetPlayback() {
+    public func reset() {
         stop()
         // Publish remaining time for current audio record.
         updatePlaybackTimeAttributes()
