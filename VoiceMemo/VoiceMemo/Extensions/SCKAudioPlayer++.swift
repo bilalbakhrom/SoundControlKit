@@ -8,6 +8,7 @@
 import Foundation
 import SoundControlKit
 
+@MainActor
 extension SCKAudioPlayer {
     var isExpanded: Bool {
         (getParameter(forKey: "player_view_expanded") as? Bool) ?? false
@@ -18,6 +19,7 @@ extension SCKAudioPlayer {
     }
 }
 
+@MainActor
 extension Array where Element == SCKAudioPlayer {
     func closeAll() { self.forEach { $0.setExpanded(false) }}
 }

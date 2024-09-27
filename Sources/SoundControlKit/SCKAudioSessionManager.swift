@@ -16,14 +16,12 @@ open class SCKAudioSessionManager: NSObject {
     public func configurePlayAndRecordAudioSession(mode: AVAudioSession.Mode = .default) throws {
         do {
             let audioSession = AVAudioSession.sharedInstance()
-            
             // Set the audio session category to play and record, allowing default to speaker and Bluetooth.
             try audioSession.setCategory(
                 .playAndRecord,
                 mode: mode,
                 options: [.defaultToSpeaker, .allowBluetooth]
             )
-
             // Activate the audio session.
             try audioSession.setActive(true)
         } catch {
@@ -31,7 +29,33 @@ open class SCKAudioSessionManager: NSObject {
             throw AudioSessionError.configurationFailed
         }
     }
-    
+
+    public func configurePlayAndRecordAudioSession(mode: AVAudioSession.Mode = .default) async throws {
+        let audioSession = AVAudioSession.sharedInstance()
+
+        do {
+            // Set category on the main thread (usually quicker)
+            try audioSession.setCategory(
+                .playAndRecord,
+                mode: mode,
+                options: [.defaultToSpeaker, .allowBluetooth]
+            )
+            // Activate session on background thread
+            try await withCheckedThrowingContinuation { continuation in
+                DispatchQueue.global(qos: .userInitiated).async {
+                    do {
+                        try audioSession.setActive(true)
+                        continuation.resume()
+                    } catch {
+                        continuation.resume(throwing: AudioSessionError.configurationFailed)
+                    }
+                }
+            }
+        } catch {
+            throw AudioSessionError.configurationFailed
+        }
+    }
+
     /// Configures the audio session for playing recorded music or other sounds
     ///
     /// - Throws: An `AudioSessionError` if the configuration fails.

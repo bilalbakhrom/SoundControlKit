@@ -16,12 +16,12 @@
 		D5198EC02CA5AD910045FD05 /* View+CornerRadius.swift in Sources */ = {isa = PBXBuildFile; fileRef = D5198EBE2CA5AD910045FD05 /* View+CornerRadius.swift */; };
 		D5198EC22CA5AED80045FD05 /* PlayerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D5198EC12CA5AED80045FD05 /* PlayerView.swift */; };
 		D5198EC42CA5B04B0045FD05 /* RecordingControllerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D5198EC32CA5B04B0045FD05 /* RecordingControllerView.swift */; };
-		D56DA56F2B0A779E006CE22B /* SoundControlKitExampleApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = D56DA56E2B0A779E006CE22B /* SoundControlKitExampleApp.swift */; };
 		D56DA5732B0A77A0006CE22B /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = D56DA5722B0A77A0006CE22B /* Assets.xcassets */; };
 		D56DA5762B0A77A0006CE22B /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = D56DA5752B0A77A0006CE22B /* Preview Assets.xcassets */; };
 		D56DA5862B0A77E2006CE22B /* RecorderButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = D56DA5802B0A77E2006CE22B /* RecorderButton.swift */; };
 		D56DA5872B0A77E2006CE22B /* PlayerButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = D56DA5812B0A77E2006CE22B /* PlayerButton.swift */; };
 		D5AFC0B82CA6E3E700A030AD /* SCKAudioPlayer++.swift in Sources */ = {isa = PBXBuildFile; fileRef = D5AFC0B72CA6E3E700A030AD /* SCKAudioPlayer++.swift */; };
+		D5AFC0BA2CA6EF4B00A030AD /* VoiceMemo.swift in Sources */ = {isa = PBXBuildFile; fileRef = D5AFC0B92CA6EF4B00A030AD /* VoiceMemo.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -34,12 +34,12 @@
 		D5198EC12CA5AED80045FD05 /* PlayerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlayerView.swift; sourceTree = "<group>"; };
 		D5198EC32CA5B04B0045FD05 /* RecordingControllerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecordingControllerView.swift; sourceTree = "<group>"; };
 		D56DA56B2B0A779E006CE22B /* VoiceMemo.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = VoiceMemo.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		D56DA56E2B0A779E006CE22B /* SoundControlKitExampleApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SoundControlKitExampleApp.swift; sourceTree = "<group>"; };
 		D56DA5722B0A77A0006CE22B /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		D56DA5752B0A77A0006CE22B /* Preview Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = "Preview Assets.xcassets"; sourceTree = "<group>"; };
 		D56DA5802B0A77E2006CE22B /* RecorderButton.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = RecorderButton.swift; sourceTree = "<group>"; };
 		D56DA5812B0A77E2006CE22B /* PlayerButton.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = PlayerButton.swift; sourceTree = "<group>"; };
 		D5AFC0B72CA6E3E700A030AD /* SCKAudioPlayer++.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "SCKAudioPlayer++.swift"; sourceTree = "<group>"; };
+		D5AFC0B92CA6EF4B00A030AD /* VoiceMemo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VoiceMemo.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -112,7 +112,7 @@
 		D56DA58C2B0A78CA006CE22B /* Views */ = {
 			isa = PBXGroup;
 			children = (
-				D56DA56E2B0A779E006CE22B /* SoundControlKitExampleApp.swift */,
+				D5AFC0B92CA6EF4B00A030AD /* VoiceMemo.swift */,
 				D5198EB72CA5AC310045FD05 /* HomeView.swift */,
 				D5198EC32CA5B04B0045FD05 /* RecordingControllerView.swift */,
 				D5198EB92CA5AC560045FD05 /* Indicator.swift */,
@@ -221,10 +221,10 @@
 				D5198EC42CA5B04B0045FD05 /* RecordingControllerView.swift in Sources */,
 				D5198EC22CA5AED80045FD05 /* PlayerView.swift in Sources */,
 				D5198EC02CA5AD910045FD05 /* View+CornerRadius.swift in Sources */,
+				D5AFC0BA2CA6EF4B00A030AD /* VoiceMemo.swift in Sources */,
 				D5198EBA2CA5AC560045FD05 /* Indicator.swift in Sources */,
 				D5AFC0B82CA6E3E700A030AD /* SCKAudioPlayer++.swift in Sources */,
 				D56DA5872B0A77E2006CE22B /* PlayerButton.swift in Sources */,
-				D56DA56F2B0A779E006CE22B /* SoundControlKitExampleApp.swift in Sources */,
 				D56DA5862B0A77E2006CE22B /* RecorderButton.swift in Sources */,
 				D5198EB42CA5AB720045FD05 /* SoundManager.swift in Sources */,
 			);

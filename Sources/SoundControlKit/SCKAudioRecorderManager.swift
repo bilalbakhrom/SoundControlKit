@@ -224,12 +224,13 @@ open class SCKAudioRecorderManager: SCKAudioSessionManager, @unchecked Sendable 
     
     /// Initiates the audio recording process asynchronously.
     /// If not already recording, triggers a haptic vibration.
+    @MainActor
     public func record() async {
         // Do not initiate recording if the app is already recording.
         guard recordingState != .recording && isRecordPremissionGranted else { return }
         
         // Update session configuration for recording.
-        try? configurePlayAndRecordAudioSession()
+        try? await configurePlayAndRecordAudioSession()
 
         // If transitioning from a stopped state, provide a success feedback notification.
         if recordingState == .stopped {

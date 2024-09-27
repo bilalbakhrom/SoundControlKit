@@ -31,28 +31,36 @@ final class SoundManager: NSObject, ObservableObject {
     override init() {
         realTimeRecorder = SCKRealTimeAudioRecorder(fileName: .dateWithTime, outputFormat: .aac)
         super.init()
+    }    
 
-        realTimeRecorder.delegate = self
-        realTimeRecorder.configure()
+    private func loadAudioFiles() {
+        Task { @MainActor in
+            let urls = await self.collectAudioFiles()
+            audioPlayers = urls.map(SCKAudioPlayer.init)
+            audioPlayers.forEach { try? $0.configure() }
+            closeAll()
+        }
     }
 
-    private func collectAudioFiles() -> [URL] {
-        let fileManager = FileManager.default
-        let temporaryDirectory = fileManager.temporaryDirectory
-        let audioExtensions = SCKOutputFormat.supportedFormats
+    private func collectAudioFiles() async -> [URL] {
+        return await withCheckedContinuation { continuation in
+            DispatchQueue.global(qos: .userInitiated).async {
+                let fileManager = FileManager.default
+                let temporaryDirectory = fileManager.temporaryDirectory
+                let audioExtensions = SCKOutputFormat.supportedFormats
 
-        do {
-            // Get all files in the temporary directory
-            let allFiles = try fileManager.contentsOfDirectory(at: temporaryDirectory, includingPropertiesForKeys: nil)
-            // Filter for audio files based on the defined extensions
-            let audioFiles = allFiles.filter { url in
-                audioExtensions.contains(url.pathExtension.lowercased())
+                do {
+                    let allFiles = try fileManager.contentsOfDirectory(at: temporaryDirectory, includingPropertiesForKeys: nil)
+                    let audioFiles = allFiles.filter { url in
+                        audioExtensions.contains(url.pathExtension.lowercased())
+                    }
+
+                    continuation.resume(returning: audioFiles)
+                } catch {
+                    print("Error while fetching audio files: \(error.localizedDescription)")
+                    continuation.resume(returning: [])
+                }
             }
-
-            return audioFiles
-        } catch {
-            print("Error while fetching audio files: \(error.localizedDescription)")
-            return []
         }
     }
 }
@@ -66,6 +74,7 @@ extension SoundManager {
         }
 
         realTimeRecorder.configure()
+        realTimeRecorder.delegate = self
         loadAudioFiles()
     }
 
@@ -129,13 +138,6 @@ extension SoundManager {
 
     func closeAll() {
         audioPlayers.closeAll()
-    }
-
-    private func loadAudioFiles() {
-        let urls = self.collectAudioFiles()
-        audioPlayers = urls.map(SCKAudioPlayer.init)
-        audioPlayers.forEach { try? $0.configure() }
-        closeAll()
     }
 
     private func askRecordingPermission() async {

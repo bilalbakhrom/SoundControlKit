@@ -119,6 +119,26 @@ extension SCKRealTimeAudioRecorder {
     }
 }
 
+// MARK: - Setters
+
+extension SCKRealTimeAudioRecorder {
+    /// Updates the filename for the output file and reconfigures the audio engine.
+    ///
+    /// - Parameter option: The new file naming convention.
+    public func setFileName(_ option: SCKRecordingFileNameOption) {
+        stopRecordingIfNeeded()
+        recordingDetails = RecordingDetails(option: option, format: recordingDetails.format)
+    }
+
+    /// Updates the output format for the recording and reconfigures the audio engine.
+    ///
+    /// - Parameter newFormat: The new output format.
+    public func setOutputFormat(_ newFormat: SCKOutputFormat) {
+        stopRecordingIfNeeded()
+        recordingDetails = RecordingDetails(option: recordingDetails.option, format: newFormat)
+    }
+}
+
 // MARK: - Triggers
 
 extension SCKRealTimeAudioRecorder {
@@ -223,6 +243,7 @@ extension SCKRealTimeAudioRecorder {
 // MARK: - Recording Control
 
 extension SCKRealTimeAudioRecorder {
+    @MainActor
     public func prepare() {
         configure()
     }
@@ -287,28 +308,15 @@ extension SCKRealTimeAudioRecorder {
 // MARK: - Configuration
 
 extension SCKRealTimeAudioRecorder {
-    /// Updates the filename for the output file and reconfigures the audio engine.
-    ///
-    /// - Parameter option: The new file naming convention.
-    public func setFileName(_ option: SCKRecordingFileNameOption) {
-        stopRecordingIfNeeded()
-        recordingDetails = RecordingDetails(option: option, format: recordingDetails.format)
-    }
-
-    /// Updates the output format for the recording and reconfigures the audio engine.
-    ///
-    /// - Parameter newFormat: The new output format.
-    public func setOutputFormat(_ newFormat: SCKOutputFormat) {
-        stopRecordingIfNeeded()
-        recordingDetails = RecordingDetails(option: recordingDetails.option, format: newFormat)
-    }
-
     /// Configures the audio engine by setting up the audio file and real-time audio output.
+    @MainActor
     public func configure() {
-        do {
-            try configurePlayAndRecordAudioSession(mode: .voiceChat)
-        } catch {
-            print("Error configuring audio engine: \(error)")
+        Task {
+            do {
+                try await configurePlayAndRecordAudioSession(mode: .voiceChat)
+            } catch {
+                print("Error configuring audio engine: \(error)")
+            }
         }
     }
 
