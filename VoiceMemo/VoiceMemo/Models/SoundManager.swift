@@ -33,12 +33,13 @@ final class SoundManager: NSObject, ObservableObject {
         super.init()
     }
 
-    @MainActor
-    private func loadAudioFiles() async {
-        let urls = await self.collectAudioFiles()
-        audioPlayers = urls.map(SCKAudioPlayer.init)
-        audioPlayers.forEach { try? $0.configure() }
-        closeAll()
+    private func loadAudioFiles() {
+        Task { @MainActor in
+            let urls = await self.collectAudioFiles()
+            audioPlayers = urls.map(SCKAudioPlayer.init)
+            audioPlayers.forEach { try? $0.configure() }
+            closeAll()
+        }
     }
 
     private func collectAudioFiles() async -> [URL] {
@@ -70,7 +71,7 @@ extension SoundManager {
 
         realTimeRecorder.prepare()
         realTimeRecorder.delegate = self
-        Task { await loadAudioFiles() }
+        loadAudioFiles()
     }
 
     func setPlaybackSession() {
@@ -158,7 +159,7 @@ extension SoundManager: SCKRealTimeAudioRecorderDelegate {
         Task { @MainActor in
             avgPowers = []
             recordingCurrentTime = "00:00"
-            prepare()
+            loadAudioFiles()
         }
     }
 
