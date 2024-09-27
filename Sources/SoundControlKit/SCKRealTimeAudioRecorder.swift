@@ -41,7 +41,7 @@ public class SCKRealTimeAudioRecorder: SCKAudioSessionManager {
         return format.channelCount >= 2
     }
 
-    public var isRecordPremissionGranted: Bool {
+    public var isRecordPermissionGranted: Bool {
         if #available(iOS 17.0, *) {
             return AVAudioApplication.shared.recordPermission == .granted
         } else {
@@ -50,7 +50,7 @@ public class SCKRealTimeAudioRecorder: SCKAudioSessionManager {
     }
 
     private var canStartRecording: Bool {
-        recordingState != .recording && isRecordPremissionGranted
+        recordingState != .recording && isRecordPermissionGranted
     }
 
     private var cachedFileURL: URL?
@@ -142,7 +142,7 @@ extension SCKRealTimeAudioRecorder {
 // MARK: - Triggers
 
 extension SCKRealTimeAudioRecorder {
-    private func performDelegateCall(lockIndex: LockIndex, action: (SCKRealTimeAudioRecorderDelegate) -> Void) {
+    private func performDelegateCall(lockIndex: AudioRecordingAspect, action: (SCKRealTimeAudioRecorderDelegate) -> Void) {
         guard let delegate else { return }
         let lock = locks[lockIndex.index]
 

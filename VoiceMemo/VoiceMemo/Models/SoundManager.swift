@@ -20,7 +20,7 @@ final class SoundManager: NSObject, ObservableObject {
     @Published var audioPlayers: [SCKAudioPlayer] = []
     @Published var isPlaybackSessionEnabled: Bool = false
 
-    public var isRecordPremissionGranted: Bool {
+    public var isRecordPermissionGranted: Bool {
         if #available(iOS 17.0, *) {
             return AVAudioApplication.shared.recordPermission == .granted
         } else {
@@ -64,7 +64,7 @@ final class SoundManager: NSObject, ObservableObject {
 @MainActor
 extension SoundManager {
     func prepare() {
-        guard isRecordPremissionGranted else {
+        guard isRecordPermissionGranted else {
             Task { await askRecordingPermission() }
             return
         }
@@ -93,7 +93,7 @@ extension SoundManager {
     }
 
     func recordAndStop() {
-        guard isRecordPremissionGranted else {
+        guard isRecordPermissionGranted else {
             Task { await askRecordingPermission() }
             return
         }

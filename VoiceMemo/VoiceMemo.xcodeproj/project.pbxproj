@@ -363,7 +363,7 @@
 				DEVELOPMENT_TEAM = DNW46HQPWS;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_CFBundleDisplayName = "Demo App";
+				INFOPLIST_KEY_CFBundleDisplayName = VoiceMemo;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.lifestyle";
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "We need access to your microphone to enable experts to send audio messages and participate in video calls, providing a richer and more interactive support experience.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
@@ -377,7 +377,7 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.sck.SoundControlKitExample;
+				PRODUCT_BUNDLE_IDENTIFIER = com.sck.voicememos;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SUPPORTS_MACCATALYST = NO;
@@ -398,7 +398,7 @@
 				DEVELOPMENT_TEAM = DNW46HQPWS;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_CFBundleDisplayName = "Demo App";
+				INFOPLIST_KEY_CFBundleDisplayName = VoiceMemo;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.lifestyle";
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "We need access to your microphone to enable experts to send audio messages and participate in video calls, providing a richer and more interactive support experience.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
@@ -412,7 +412,7 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.sck.SoundControlKitExample;
+				PRODUCT_BUNDLE_IDENTIFIER = com.sck.voicememos;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SUPPORTS_MACCATALYST = NO;
